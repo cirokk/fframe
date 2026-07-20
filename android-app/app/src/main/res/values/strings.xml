@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Fframe</string>
+    <string name="notif_channel_name">Fframe ativo</string>
+    <string name="notif_bubble_text">Bolha do Fframe ativa — pronta para enviar vídeos</string>
+</resources>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Configurações" android:textColor="@color/ink"
+            android:textSize="24sp" android:textStyle="bold" android:layout_marginBottom="20dp" />
+
+        <Button android:id="@+id/scanQrBtn" style="@style/Primary"
+            android:text="📷  Parear por QR code" android:layout_marginBottom="16dp" />
+
+        <TextView style="@style/Label" android:text="Endereço do servidor" />
+        <EditText android:id="@+id/serverUrl" style="@style/Field"
+            android:hint="https://seu-servidor.com" android:inputType="textUri" />
+
+        <TextView style="@style/Label" android:text="Chave de acesso (device key)" />
+        <EditText android:id="@+id/deviceKey" style="@style/Field"
+            android:hint="cole a chave gerada no painel" android:inputType="text" />
+
+        <TextView style="@style/Label" android:text="Projeto de destino" />
+        <Spinner android:id="@+id/projectSpinner"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:background="@drawable/field_bg" android:padding="6dp"
+            android:layout_marginBottom="6dp" />
+        <Button android:id="@+id/reloadProjects" style="@style/Ghost"
+            android:text="Recarregar projetos do servidor" />
+
+        <View android:layout_width="match_parent" android:layout_height="12dp" />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="6dp">
+            <TextView style="@style/Label" android:text="Qualidade de Proxy" android:layout_marginBottom="0dp" />
+            <TextView android:id="@+id/proxyInfo" android:layout_width="22dp" android:layout_height="22dp"
+                android:text="i" android:gravity="center" android:textStyle="italic" android:textColor="@color/muted"
+                android:textSize="13sp" android:background="@drawable/info_circle" android:layout_marginStart="8dp" />
+        </LinearLayout>
+        <RadioGroup android:id="@+id/proxyQuality" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+            <RadioButton android:id="@+id/q720" style="@style/Radio" android:text="720" android:checked="true" />
+            <RadioButton android:id="@+id/q1080lq" style="@style/Radio" android:text="1080 LQ" />
+            <RadioButton android:id="@+id/q1080hq" style="@style/Radio" android:text="1080 HQ" />
+        </RadioGroup>
+
+        <TextView style="@style/Label" android:text="Envio automático" />
+        <RadioGroup android:id="@+id/uploadMode"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+            <RadioButton android:id="@+id/modeAuto" style="@style/Radio" android:text="Automático (envia tudo)" />
+            <RadioButton android:id="@+id/modeAsk" style="@style/Radio" android:text="Perguntar (escolho cada vídeo)" android:checked="true" />
+            <RadioButton android:id="@+id/modeOff" style="@style/Radio" android:text="Desligado" />
+        </RadioGroup>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:textColor="@color/ink" android:textSize="14sp"
+                android:text="Mostrar barra de carregamento ao enviar" />
+            <Switch android:id="@+id/statusBarSwitch"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="16dp">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:orientation="vertical" android:layout_marginEnd="10dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Enviar com dados móveis" android:textColor="@color/ink" android:textSize="15sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Desligado = envia só no Wi-Fi (o resto vai pra fila)" android:textColor="@color/muted" android:textSize="12sp" />
+            </LinearLayout>
+            <Switch android:id="@+id/cellularSwitch"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <Button android:id="@+id/saveBtn" style="@style/Primary" android:text="Salvar configurações" />
+
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="@color/line" android:layout_marginVertical="20dp" />
+
+        <TextView style="@style/Label" android:text="Permissões" />
+        <TextView android:id="@+id/permStatus" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="@color/muted"
+            android:textSize="13sp" android:layout_marginBottom="12dp" android:text="Verificando..." />
+        <Button android:id="@+id/permOverlayBtn" style="@style/Ghost" android:text="Permitir sobrepor apps" />
+        <Button android:id="@+id/permMediaBtn" style="@style/Ghost" android:text="Permitir acesso aos vídeos" />
+
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="@color/line" android:layout_marginVertical="20dp" />
+
+        <Button android:id="@+id/toggleBubbleBtn" style="@style/Primary" android:text="Ligar a bolha flutuante" />
+        <TextView android:id="@+id/statusText" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="@color/muted" android:textSize="13sp"
+            android:gravity="center" android:layout_marginTop="16dp" android:text="" />
+    </LinearLayout>
+</ScrollView>

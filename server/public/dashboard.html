@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Fframe</title>
+<meta name="theme-color" content="#0A0A0B" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Fframe" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+<!-- Overlay de login / primeiro acesso -->
+<div id="auth" class="auth hidden">
+  <form id="auth-card" class="auth-card" autocomplete="off">
+    <div class="auth-brand"><span class="dot"></span><b>Fframe</b></div>
+    <h2 id="auth-title">Entrar</h2>
+    <p id="auth-sub" class="auth-sub"></p>
+    <input id="auth-user" class="fld" type="text" placeholder="Usuário" autocomplete="username" />
+    <input id="auth-pass" class="fld" type="password" placeholder="Senha" autocomplete="current-password" />
+    <input id="auth-pass2" class="fld hidden" type="password" placeholder="Repita a senha" autocomplete="new-password" />
+    <label class="check"><input id="auth-remember" type="checkbox" checked /> <span>Manter conectado</span></label>
+    <div id="auth-err" class="auth-err"></div>
+    <button id="auth-btn" class="btn-primary" type="submit">Entrar</button>
+  </form>
+</div>
+
+<!-- App -->
+<div id="app" class="app hidden">
+  <div id="scrim" class="scrim"></div>
+  <aside id="side">
+    <div class="brand"><span class="dot"></span><div><b>Fframe</b><span id="host">frame.io</span></div></div>
+    <div class="side-h">Projetos</div>
+    <div id="projects"></div>
+    <button id="new-proj" class="newbtn" type="button">＋ Novo Projeto</button>
+    <div class="side-h">Configurações</div>
+    <div id="nav-devices" class="proj"><span class="nm">📱 Dispositivos</span></div>
+    <div class="foot">
+      <div id="total">—</div>
+      <button id="logout" class="linkbtn" type="button">Sair</button>
+    </div>
+  </aside>
+  <main>
+    <div class="top">
+      <button id="menu" class="menu" type="button" aria-label="menu">☰</button>
+      <h1 id="title">Todos os vídeos</h1>
+      <span class="sub" id="count"></span>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<!-- Player em tela cheia -->
+<div id="player" class="player"></div>
+
+<!-- Avisos (toasts) e modal — tudo dentro do site, sem popups do navegador -->
+<div id="toasts" class="toasts"></div>
+<div id="modal" class="modal"></div>
+
+<script src="/qrcode.min.js" defer></script>
+<script src="/app.js" defer></script>
+</body>
+</html>

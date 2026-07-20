@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.Fframe" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/royal</item>
+        <item name="colorPrimaryDark">@color/dark</item>
+        <item name="colorAccent">@color/royal</item>
+        <item name="android:windowBackground">@color/dark</item>
+        <item name="android:statusBarColor">@color/dark</item>
+    </style>
+</resources>

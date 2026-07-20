@@ -1,0 +1,11 @@
+<resources>
+    <color name="dark">#0A0A0B</color>
+    <color name="charcoal">#141417</color>
+    <color name="graphite">#1E1E23</color>
+    <color name="line">#2A2A31</color>
+    <color name="ink">#F5F5F7</color>
+    <color name="muted">#9A9AA6</color>
+    <color name="royal">#1A4DFF</color>
+    <color name="success">#00C853</color>
+    <color name="danger">#FF3B30</color>
+</resources>

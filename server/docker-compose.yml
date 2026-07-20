@@ -1,0 +1,24 @@
+services:
+  fframe-server:
+    build: .
+    container_name: ${CONTAINER_NAME:-fframe-server}
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3260}:3000"
+    environment:
+      PORT: 3000
+      # Endereco publico deste servidor (aparece nas upload_urls do fluxo FiLMiC).
+      # Ex.: https://seu-dominio.com  — definido no arquivo .env
+      PUBLIC_BASE: "${PUBLIC_BASE:-http://localhost:3260}"
+      # Tamanho de cada pedaco de upload (bytes). 25MB por padrao.
+      CHUNK_SIZE: "${CHUNK_SIZE:-26214400}"
+    volumes:
+      # Onde os videos recebidos ficam salvos (defina DATA_DIR no .env).
+      - "${DATA_DIR:-./data}:/app/data"
+      # Codigo montado -> alterar = so reiniciar (sem rebuild).
+      - ./server.js:/app/server.js:ro
+      - ./lib:/app/lib:ro
+      - ./public:/app/public:ro
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m

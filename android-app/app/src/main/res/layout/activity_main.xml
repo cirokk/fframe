@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Top bar -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Fframe" android:textColor="@color/ink"
+                android:textSize="24sp" android:textStyle="bold" />
+            <TextView android:id="@+id/configFab" android:layout_width="44dp" android:layout_height="44dp"
+                android:text="⚙" android:gravity="center" android:textColor="#FFFFFF" android:textSize="20sp"
+                android:background="@drawable/fab_bg" />
+        </LinearLayout>
+
+        <!-- Abas -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginBottom="14dp">
+            <TextView android:id="@+id/tabVideos" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_marginEnd="6dp" android:text="Vídeos"
+                android:gravity="center" android:paddingVertical="12dp" android:textSize="14sp"
+                android:textColor="@color/ink" android:background="@drawable/btn_primary" />
+            <TextView android:id="@+id/tabQueue" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_marginStart="6dp" android:text="Processamento"
+                android:gravity="center" android:paddingVertical="12dp" android:textSize="14sp"
+                android:textColor="@color/muted" android:background="@drawable/btn_ghost" />
+        </LinearLayout>
+
+        <!-- Aba Vídeos (galeria) -->
+        <LinearLayout android:id="@+id/galleryView" android:layout_width="match_parent"
+            android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="4dp">
+                <Button android:id="@+id/projectBtn" style="@style/Ghost" android:layout_width="0dp"
+                    android:layout_weight="1" android:layout_marginEnd="10dp" android:layout_marginBottom="0dp"
+                    android:text="Todos os vídeos ▾" android:maxLines="1" />
+                <TextView android:id="@+id/newProjectBtn" android:layout_width="44dp" android:layout_height="44dp"
+                    android:text="＋" android:gravity="center" android:textColor="#FFFFFF" android:textSize="22sp"
+                    android:background="@drawable/fab_bg" />
+            </LinearLayout>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="@color/muted" android:textSize="11sp"
+                android:text="segure o projeto para excluir" android:layout_marginBottom="12dp" />
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+                <LinearLayout android:id="@+id/videoList" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" />
+            </ScrollView>
+        </LinearLayout>
+
+        <!-- Aba Processamento (fila) -->
+        <LinearLayout android:id="@+id/queueView" android:layout_width="match_parent"
+            android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical"
+            android:visibility="gone">
+            <TextView android:id="@+id/queueStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textColor="@color/muted" android:textSize="13sp" android:layout_marginBottom="10dp" android:text="" />
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+                <LinearLayout android:id="@+id/queueList" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" />
+            </ScrollView>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginTop="10dp">
+                <Button android:id="@+id/clearQueueBtn" style="@style/Ghost" android:layout_width="0dp"
+                    android:layout_weight="1" android:layout_marginEnd="8dp" android:layout_marginBottom="0dp"
+                    android:text="Limpar" android:maxLines="1" />
+                <Button android:id="@+id/processBtn" style="@style/Primary" android:layout_width="0dp"
+                    android:layout_weight="2" android:text="Processar fila" android:maxLines="1" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Nao configurado -->
+    <LinearLayout android:id="@+id/setupHint" android:layout_width="match_parent"
+        android:layout_height="match_parent" android:orientation="vertical" android:gravity="center"
+        android:padding="32dp" android:background="@color/dark" android:visibility="gone">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Fframe" android:textColor="@color/ink" android:textSize="30sp" android:textStyle="bold" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Configure o servidor e a chave para começar" android:textColor="@color/muted"
+            android:gravity="center" android:layout_marginTop="8dp" android:layout_marginBottom="20dp" />
+        <Button android:id="@+id/goConfig" style="@style/Primary" android:layout_width="wrap_content"
+            android:paddingHorizontal="28dp" android:text="Configurar" />
+    </LinearLayout>
+</FrameLayout>
