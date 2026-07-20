@@ -1,7 +1,8 @@
-// server.js — "Frame.io fake": emula a API do Frame.io (V2) + OAuth2 para que o
-// FiLMiC Pro envie os videos gravados para o SEU servidor em vez do Frame.io.
+// server.js — servidor Camera-to-Cloud auto-hospedado: recebe videos do app
+// Fframe Uploader e emula a API do Frame.io (V2) + OAuth2 para interoperar
+// com outros apps de camera que falam o mesmo protocolo.
 //
-// Fluxo que o app faz (descoberto na engenharia reversa do APK 7.6.4):
+// Fluxo do protocolo C2C:
 //   1) OAuth2  -> applications.frame.io/oauth2/auth  e  /oauth2/token   (header Bearer)
 //   2) Bootstrap -> descobre conta / projeto / root_asset_id  (GET /v2/me, etc.)
 //   3) Criar asset -> POST /v2/assets/{parent}/children {name,type,filetype,filesize}
@@ -203,14 +204,14 @@ function projectPayload(p) {
 }
 const allProjectsPayload = () => store.listProjects().map((p) => projectPayload(p));
 
-// ---- API de DISPOSITIVOS (Camera to Cloud) — descoberta observando o app real.
-// O FiLMiC conecta como um "device" C2C e busca a conta/projeto por aqui.
+// ---- API de DISPOSITIVOS (Camera to Cloud) —
+// o app cliente conecta como um "device" C2C e busca a conta/projeto por aqui.
 const DEVICE_ID = cfg.device ? cfg.device.id : cfg.user.id;
 function devicePayload() {
   const p = store.getConnectedProject();
   return {
     id: DEVICE_ID,
-    name: "FiLMiC Pro",
+    name: "Fframe",
     type: "device",
     status: "connected",
     connected: true,

@@ -1,12 +1,8 @@
 # Fframe Server
 
-Servidor auto-hospedado que **recebe vídeos** de duas fontes e os organiza em projetos, com um
-painel web (PWA) para assistir, baixar e excluir:
-
-1. **FiLMiC Pro (Camera to Cloud)** — emula a API do Frame.io V2 (OAuth2 + `/v2/*`), então o FiLMiC
-   envia os proxies para cá pensando que é o Frame.io.
-2. **Fframe Uploader** (o app deste repositório) — envia via `POST /_ingest` autenticado por uma
-   *device key*.
+Servidor auto-hospedado que **recebe vídeos** e os organiza em projetos, com um painel web (PWA)
+para assistir, baixar e excluir. A forma principal de enviar é o **Fframe Uploader** (o app deste
+repositório), via `POST /_ingest` autenticado por uma *device key*.
 
 > Projeto de estudo/interoperabilidade. Use com apps e contas que você tem direito de usar.
 
@@ -27,15 +23,10 @@ No primeiro acesso você cria **usuário e senha** (guardados como hash, só no 
 | Variável | Descrição |
 |----------|-----------|
 | `PORT` | porta publicada no host (padrão 3260) |
-| `PUBLIC_BASE` | endereço público (usado nas upload_urls do fluxo FiLMiC) |
+| `PUBLIC_BASE` | endereço público do servidor |
 | `DATA_DIR` | onde salvar os vídeos no host |
 | `CONTAINER_NAME` | nome do container |
 | `CHUNK_SIZE` | tamanho de cada pedaço de upload (bytes) |
-
-## Conectar o FiLMiC Pro
-
-O FiLMiC precisa apontar para este servidor no lugar do `api.frame.io` / `applications.frame.io`
-(via DNS/redirect ou um app modificado). O servidor auto-aprova o login OAuth e recebe os uploads.
 
 ## Conectar o app Fframe Uploader
 
@@ -46,11 +37,11 @@ afetar os outros.
 
 ## Estrutura
 
-- `server.js` — rotas (OAuth/`/v2/*` do FiLMiC, `/_ingest` do app, `/_api/*` e mídia do painel)
+- `server.js` — rotas (`/_ingest` do app, `/_api/*` e mídia do painel)
 - `lib/store.js` — estado (config, projetos, assets, auth, dispositivos)
 - `public/` — painel web (PWA): `dashboard.html`, `app.css`, `app.js`
 - `data/` — dados em runtime (config, vídeos, logs, dispositivos) — **não versionado**
-- `test-client.js` — simula o fluxo do FiLMiC para testar sem celular
+- `test-client.js` — simula um envio completo para testar o servidor sem celular
 
 ## Segurança
 

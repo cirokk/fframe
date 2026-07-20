@@ -7,7 +7,7 @@ services:
       - "${PORT:-3260}:3000"
     environment:
       PORT: 3000
-      # Endereco publico deste servidor (aparece nas upload_urls do fluxo FiLMiC).
+      # Endereco publico deste servidor (usado nas URLs geradas para o app).
       # Ex.: https://seu-dominio.com  — definido no arquivo .env
       PUBLIC_BASE: "${PUBLIC_BASE:-http://localhost:3260}"
       # Tamanho de cada pedaco de upload (bytes). 25MB por padrao.

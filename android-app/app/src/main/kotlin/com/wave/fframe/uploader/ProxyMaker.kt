@@ -16,8 +16,8 @@ import androidx.media3.transformer.VideoEncoderSettings
 import java.io.File
 
 /**
- * Cria a versao PROXY do video no proprio aparelho (redimensiona + recomprime),
- * igual ao FiLMiC. Qualidades: 720 / 1080 LQ / 1080 HQ.
+ * Cria a versao PROXY do video no proprio aparelho (redimensiona + recomprime).
+ * Qualidades: 720 / 1080 LQ / 1080 HQ.
  * IMPORTANTE: make() deve ser chamado na THREAD PRINCIPAL (o Transformer exige Looper).
  */
 object ProxyMaker {

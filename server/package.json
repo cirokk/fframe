@@ -1,7 +1,7 @@
 {
-  "name": "frameio-fake-server",
+  "name": "fframe-server",
   "version": "0.1.0",
-  "description": "Servidor que emula a API do Frame.io (V2 + OAuth2) para receber uploads C2C do FiLMiC Pro no seu proprio servidor.",
+  "description": "Servidor auto-hospedado de Camera-to-Cloud: recebe uploads do app Fframe Uploader, organiza em projetos e disponibiliza um painel web.",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

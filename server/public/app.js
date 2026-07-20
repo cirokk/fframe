@@ -139,7 +139,7 @@ async function render() {
   $("count").textContent = assets.length + " vídeo(s)";
   const content = $("content");
   if (!assets.length) {
-    content.innerHTML = '<div class="empty"><div class="big">🎬</div>Nenhum vídeo aqui ainda.<br>Grave no FiLMiC com o auto-upload ligado.</div>';
+    content.innerHTML = '<div class="empty"><div class="big">🎬</div>Nenhum vídeo aqui ainda.<br>Grave com o Fframe Uploader e o auto-envio ligado.</div>';
     return;
   }
   const byDate = {};

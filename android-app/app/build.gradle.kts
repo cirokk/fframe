@@ -58,7 +58,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     // Leitor de QR code para pareamento com o servidor
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
-    // Transcodificacao do proxy no aparelho (igual FiLMiC)
+    // Transcodificacao do proxy no aparelho
     implementation("androidx.media3:media3-transformer:1.4.1")
     implementation("androidx.media3:media3-effect:1.4.1")
     implementation("androidx.media3:media3-common:1.4.1")

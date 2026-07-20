@@ -1,8 +1,7 @@
 # Fframe Uploader
 
 App Android que envia os vídeos gravados por **qualquer app de câmera** para o **seu próprio
-servidor**, criando uma versão **proxy** (mais leve) no aparelho antes do envio — inspirado no
-fluxo "Camera to Cloud" do FiLMiC Pro, mas para qualquer câmera.
+servidor**, criando uma versão **proxy** (mais leve) no aparelho antes do envio.
 
 Funciona junto com o [servidor Fframe](../server) (compatível com Frame.io C2C e com este app).
 

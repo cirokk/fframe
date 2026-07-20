@@ -1,6 +1,6 @@
-// test-client.js — simula o FiLMiC Pro para PROVAR que o servidor funciona,
-// sem precisar de celular. Roda o fluxo inteiro: login -> conta/projeto ->
-// criar asset -> upload de um "video" de teste -> confere que chegou.
+// test-client.js — simula um app de camera C2C para PROVAR que o servidor
+// funciona, sem precisar de celular. Roda o fluxo inteiro: login -> conta/
+// projeto -> criar asset -> upload de um "video" de teste -> confere que chegou.
 //
 // Uso:  node test-client.js            (usa http://localhost:3000)
 //       BASE=http://SEU_SERVIDOR:3000 node test-client.js
@@ -25,17 +25,17 @@ function ok(cond, msg) {
 }
 
 (async () => {
-  console.log(`\n== Simulando FiLMiC Pro contra ${BASE} ==\n`);
+  console.log(`\n== Simulando um app de camera C2C contra ${BASE} ==\n`);
 
   // 1) OAuth: pega o code e troca por token
-  const authUrl = `${BASE}/oauth2/auth?client_id=teste&response_type=code&redirect_uri=${encodeURIComponent("com.filmicpro.frameio:/callback")}&scope=offline&state=abc`;
+  const authUrl = `${BASE}/oauth2/auth?client_id=teste&response_type=code&redirect_uri=${encodeURIComponent("com.example.c2c:/callback")}&scope=offline&state=abc`;
   const authRes = await fetch(authUrl, { redirect: "manual" });
   const loc = authRes.headers.get("location") || "";
-  const code = new URL(loc.replace("com.filmicpro.frameio:/", "http://x/")).searchParams.get("code");
+  const code = new URL(loc.replace("com.example.c2c:/", "http://x/")).searchParams.get("code");
   ok(!!code, `OAuth authorize devolveu um code (${code ? code.slice(0, 8) + "..." : "nenhum"})`);
 
   const tok = await j("POST", `${BASE}/oauth2/token`, {
-    body: `grant_type=authorization_code&code=${code}&redirect_uri=com.filmicpro.frameio:/callback`,
+    body: `grant_type=authorization_code&code=${code}&redirect_uri=com.example.c2c:/callback`,
     raw: true,
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });

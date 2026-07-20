@@ -4,8 +4,8 @@
 
 **Seu próprio "Frame.io" — auto-hospedado, sem mensalidade, sem limite de armazenamento.**
 
-Receba vídeos de qualquer câmera direto no seu servidor, com proxy leve gerado no aparelho,
-painel web e compatibilidade com o fluxo *Camera to Cloud* do FiLMiC Pro.
+Receba vídeos de qualquer câmera direto no seu servidor, com proxy leve gerado no aparelho e
+painel web para organizar, assistir e compartilhar.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/server-Node.js%2020-339933?logo=node.js&logoColor=white)](server)
@@ -28,17 +28,14 @@ O projeto tem duas partes, cada uma com seu README detalhado:
 
 | | |
 |---|---|
-| 📦 [`server/`](server) | Servidor Node.js self-hosted: recebe vídeos, organiza em projetos, painel web (PWA), compatível com o protocolo C2C do FiLMiC Pro. |
+| 📦 [`server/`](server) | Servidor Node.js self-hosted: recebe vídeos, organiza em projetos, painel web (PWA). |
 | 📱 [`android-app/`](android-app) | App Android com bolha flutuante: detecta qualquer vídeo gravado por qualquer app de câmera e envia pro seu servidor. |
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
-    subgraph Dispositivos
-        A[📷 FiLMiC Pro<br/>Camera to Cloud]
-        B[🫧 Fframe Uploader<br/>bolha flutuante]
-    end
+    B[🫧 Fframe Uploader<br/>bolha flutuante]
 
     subgraph "Seu servidor"
         S[Fframe Server<br/>Node.js + Docker]
@@ -46,7 +43,6 @@ flowchart LR
         P[🖥️ Painel web<br/>PWA]
     end
 
-    A -- "emula API do Frame.io<br/>OAuth2 + /v2/*" --> S
     B -- "POST /_ingest<br/>header X-Device-Key" --> S
     S --> D
     P -- assiste / organiza / revoga dispositivos --> S
@@ -56,10 +52,9 @@ flowchart LR
 
 - 🔓 **Sem mensalidade, sem limite artificial** — o armazenamento é o disco do seu servidor
 - 🎞️ **Proxy leve gerado no próprio aparelho** antes do envio (720 / 1080 LQ / 1080 HQ)
-- 🫧 **Bolha flutuante** sobre qualquer app de câmera — não precisa ser o FiLMiC
+- 🫧 **Bolha flutuante** sobre qualquer app de câmera — não precisa ser um app específico
 - 📷 **Pareamento por QR code** — escaneia e já está configurado, sem digitar servidor/chave
 - 🔑 **Múltiplos dispositivos, cada um com sua própria chave**, revogável individualmente pelo painel
-- 🎥 Compatível com o protocolo *Camera to Cloud* do **FiLMiC Pro**
 - 🗂️ Painel web (PWA): projetos, galeria, player, exclusão
 - 📥 Fila de envio (retoma sozinho quando a rede volta)
 
