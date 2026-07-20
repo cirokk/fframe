@@ -1,5 +1,7 @@
 # Fframe Server
 
+🌐 **[Português](README.md)** · [English](README.en.md)
+
 Servidor auto-hospedado que **recebe vídeos** e os organiza em projetos, com um painel web (PWA)
 para assistir, baixar e excluir. A forma principal de enviar é o **Fframe Uploader** (o app deste
 repositório), via `POST /_ingest` autenticado por uma *device key*.
@@ -35,11 +37,20 @@ escaneie o QR gerado direto no app — servidor e chave são preenchidos automat
 dispositivo tem sua própria chave e pode ser **revogado individualmente** a qualquer momento, sem
 afetar os outros.
 
+## Idiomas do painel
+
+O painel vem em **português** e **inglês**, com um menu suspenso na tela de login e na barra
+lateral (a escolha fica salva no navegador; na primeira visita segue o idioma do navegador).
+O app Android continua **só em português**.
+
+Para adicionar um idioma, copie um bloco em `public/i18n.js`, traduza os valores e pronto — o
+menu passa a listar a opção sozinho. Chaves que faltarem caem no português.
+
 ## Estrutura
 
 - `server.js` — rotas (`/_ingest` do app, `/_api/*` e mídia do painel)
 - `lib/store.js` — estado (config, projetos, assets, auth, dispositivos)
-- `public/` — painel web (PWA): `dashboard.html`, `app.css`, `app.js`
+- `public/` — painel web (PWA): `dashboard.html`, `app.css`, `app.js`, `i18n.js` (traduções)
 - `data/` — dados em runtime (config, vídeos, logs, dispositivos) — **não versionado**
 - `test-client.js` — simula um envio completo para testar o servidor sem celular
 

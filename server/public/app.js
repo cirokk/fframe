@@ -1,6 +1,7 @@
 "use strict";
 // Frontend do painel. NENHUM segredo aqui: a autenticacao e feita por cookie de
 // sessao (httpOnly) e TODA autorizacao e validada no servidor.
+// Textos visiveis vem do i18n.js (t("chave")) — nunca escreva texto fixo aqui.
 
 let projects = [], current = null, configured = false;
 const DEVICES_VIEW = "__devices__"; // valor especial de `current` p/ tela Dispositivos
@@ -10,8 +11,9 @@ const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmtSize = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(2) + " GB"
   : b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
-const fmtTime = (s) => { try { return new Date(s).toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
-const fmtDate = (d) => { try { return new Date(d + "T00:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }); } catch { return d; } };
+const fmtTime = (s) => { try { return new Date(s).toLocaleString(I18n.locale(), { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
+const fmtDate = (d) => { try { return new Date(d + "T00:00:00").toLocaleDateString(I18n.locale(), { weekday: "long", day: "2-digit", month: "long" }); } catch { return d; } };
+const fmtDay = (s) => { try { return new Date(s).toLocaleDateString(I18n.locale(), { day: "2-digit", month: "2-digit", year: "numeric" }); } catch { return ""; } };
 
 async function api(method, url, body) {
   const opt = { method, headers: {} };
@@ -39,8 +41,8 @@ function dialog({ title, message, input, placeholder, okText, danger }) {
         ${message ? `<p class="modal-msg">${escapeHtml(message)}</p>` : ""}
         ${input ? `<input id="modal-input" class="fld" type="text" placeholder="${escapeHtml(placeholder || "")}" />` : ""}
         <div class="modal-acts">
-          <button class="btn-ghost" data-act="cancel" type="button">Cancelar</button>
-          <button class="btn-primary${danger ? " danger" : ""}" data-act="ok" type="button">${escapeHtml(okText || "OK")}</button>
+          <button class="btn-ghost" data-act="cancel" type="button">${escapeHtml(t("modal.cancel"))}</button>
+          <button class="btn-primary${danger ? " danger" : ""}" data-act="ok" type="button">${escapeHtml(okText || t("modal.ok"))}</button>
         </div>
       </div>`;
     back.classList.add("show");
@@ -53,11 +55,14 @@ function dialog({ title, message, input, placeholder, okText, danger }) {
     if (inp) inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); close(inp.value); } });
   });
 }
-const confirmModal = (message, okText, danger) => dialog({ title: "Confirmar", message, okText: okText || "Confirmar", danger });
-const promptModal = (title, placeholder) => dialog({ title, input: true, placeholder, okText: "Criar" });
+const confirmModal = (message, okText, danger) =>
+  dialog({ title: t("modal.confirmTitle"), message, okText: okText || t("modal.confirm"), danger });
+const promptModal = (title, placeholder) => dialog({ title, input: true, placeholder, okText: t("modal.create") });
 
 // ---- Autenticacao -----------------------------------------------------------
 async function init() {
+  I18n.init();
+  I18n.onChange = () => { if ($("app").classList.contains("hidden")) showAuth(); else render(); };
   const st = await (await fetch("/_auth/status")).json();
   configured = st.configured;
   if (st.authed) showApp(); else showAuth();
@@ -66,13 +71,11 @@ function showAuth() {
   $("app").classList.add("hidden");
   $("auth").classList.remove("hidden");
   const setup = !configured;
-  $("auth-title").textContent = setup ? "Criar acesso" : "Entrar";
-  $("auth-sub").textContent = setup
-    ? "Primeiro acesso: defina um usuário e senha. Ficam guardados com segurança (hash) só no servidor."
-    : "";
+  $("auth-title").textContent = setup ? t("auth.title.setup") : t("auth.title.signin");
+  $("auth-sub").textContent = setup ? t("auth.sub.setup") : "";
   $("auth-pass2").classList.toggle("hidden", !setup);
   $("auth-pass").setAttribute("autocomplete", setup ? "new-password" : "current-password");
-  $("auth-btn").textContent = setup ? "Criar e entrar" : "Entrar";
+  $("auth-btn").textContent = setup ? t("auth.btn.setup") : t("auth.btn.signin");
   $("auth-err").textContent = "";
 }
 function showApp() {
@@ -88,14 +91,14 @@ async function submitAuth(ev) {
   const pass = $("auth-pass").value;
   const err = $("auth-err");
   err.textContent = "";
-  if (setup && pass !== $("auth-pass2").value) { err.textContent = "As senhas não conferem."; return; }
+  if (setup && pass !== $("auth-pass2").value) { err.textContent = t("auth.err.mismatch"); return; }
   $("auth-btn").disabled = true;
   try {
     const remember = $("auth-remember").checked;
     const r = await fetch(setup ? "/_auth/setup" : "/_auth/login",
       { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user, password: pass, remember }) });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) { err.textContent = data.error === "credenciais invalidas" ? "Usuário ou senha inválidos." : (data.error || "Erro."); return; }
+    if (!r.ok) { err.textContent = data.error === "credenciais invalidas" ? t("auth.err.invalid") : (data.error || t("auth.err.generic")); return; }
     configured = true;
     $("auth-pass").value = ""; $("auth-pass2").value = "";
     showApp();
@@ -109,17 +112,17 @@ async function loadProjects() {
   const box = $("projects");
   box.innerHTML = "";
   const total = projects.reduce((s, p) => s + p.video_count, 0);
-  box.appendChild(projRow({ id: null, name: "Todos os vídeos", video_count: total }, true));
+  box.appendChild(projRow({ id: null, name: t("title.allVideos"), video_count: total }, true));
   projects.forEach((p) => box.appendChild(projRow(p, false)));
-  $("total").textContent = projects.length + " proj · " + total + " víd";
+  $("total").textContent = t("side.stats", { projects: projects.length, videos: total });
 }
 function projRow(p, isAll) {
   const el = document.createElement("div");
   el.className = "proj" + (current === p.id ? " active" : "");
   el.innerHTML =
-    (p.connected ? '<span class="conn" title="conectado no app"></span>' : "") +
+    (p.connected ? `<span class="conn" title="${escapeHtml(t("proj.connected"))}"></span>` : "") +
     `<span class="nm">${escapeHtml(p.name)}</span><span class="ct">${p.video_count}</span>` +
-    (!isAll ? `<span class="del" role="button" title="apagar projeto" data-del="${p.id}" data-name="${escapeHtml(p.name)}">×</span>` : "");
+    (!isAll ? `<span class="del" role="button" title="${escapeHtml(t("proj.deleteTitle"))}" data-del="${p.id}" data-name="${escapeHtml(p.name)}">×</span>` : "");
   el.addEventListener("click", (e) => {
     if (e.target.dataset.del) return;
     current = p.id; closeDrawer(); render();
@@ -133,13 +136,13 @@ async function render() {
   $("nav-devices").classList.toggle("active", current === DEVICES_VIEW);
   if (current === DEVICES_VIEW) return renderDevices();
   const proj = projects.find((p) => p.id === current);
-  $("title").textContent = proj ? proj.name : "Todos os vídeos";
+  $("title").textContent = proj ? proj.name : t("title.allVideos");
   const url = current ? "/_api/assets?project=" + encodeURIComponent(current) : "/_api/assets";
   const assets = await (await api("GET", url)).json();
-  $("count").textContent = assets.length + " vídeo(s)";
+  $("count").textContent = t("count.videos", { n: assets.length });
   const content = $("content");
   if (!assets.length) {
-    content.innerHTML = '<div class="empty"><div class="big">🎬</div>Nenhum vídeo aqui ainda.<br>Grave com o Fframe Uploader e o auto-envio ligado.</div>';
+    content.innerHTML = `<div class="empty"><div class="big">🎬</div>${escapeHtml(t("empty.videos.title"))}<br>${escapeHtml(t("empty.videos.hint"))}</div>`;
     return;
   }
   const byDate = {};
@@ -161,8 +164,8 @@ function cardHtml(a) {
       <div class="nm" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}</div>
       <div class="row"><span>${fmtSize(a.filesize)} · ${fmtTime(a.uploaded_at)}</span>
         <span class="acts">
-          <a class="act" href="/_download/${a.id}">baixar</a>
-          <button class="act danger" type="button" data-delv="${a.id}" data-name="${escapeHtml(a.name)}">excluir</button>
+          <a class="act" href="/_download/${a.id}">${escapeHtml(t("card.download"))}</a>
+          <button class="act danger" type="button" data-delv="${a.id}" data-name="${escapeHtml(a.name)}">${escapeHtml(t("card.delete"))}</button>
         </span></div>
     </div></div>`;
 }
@@ -174,7 +177,7 @@ function openPlayer(id, name) {
     `<div class="player-inner">
       <div class="player-bar">
         <span class="player-name">${escapeHtml(name)}</span>
-        <button class="player-close" type="button" data-close aria-label="fechar">✕</button>
+        <button class="player-close" type="button" data-close aria-label="${escapeHtml(t("player.close"))}">✕</button>
       </div>
       <video class="player-video" src="/_media/${id}" controls autoplay playsinline></video>
     </div>`;
@@ -192,48 +195,52 @@ function openPlayer(id, name) {
   document.addEventListener("keydown", onEsc);
 }
 async function novoProjeto() {
-  const name = await promptModal("Novo projeto", "Nome do projeto");
+  const name = await promptModal(t("proj.new.title"), t("proj.new.placeholder"));
   if (!name || !name.trim()) return;
   await api("POST", "/_api/projects", { name: name.trim() });
-  toast("Projeto criado.", "ok");
+  toast(t("proj.created"), "ok");
   render();
 }
 async function apagarProjeto(id, name) {
-  const ok = await confirmModal(`Apagar o projeto "${name}"?\nOs arquivos de vídeo no disco NÃO são apagados.`, "Apagar", true);
+  const ok = await confirmModal(t("proj.delete.confirm", { name }), t("proj.delete.btn"), true);
   if (!ok) return;
   const r = await api("DELETE", "/_api/projects/" + id);
   const data = await r.json().catch(() => ({}));
-  if (!data.ok) { toast(data.error || "Não foi possível apagar.", "err"); return; }
+  if (!data.ok) { toast(data.error || t("proj.delete.fail"), "err"); return; }
   if (current === id) current = null;
-  toast("Projeto apagado.", "ok");
+  toast(t("proj.deleted"), "ok");
   render();
 }
 async function excluirVideo(id, name) {
-  const ok = await confirmModal(`Excluir o vídeo "${name}"?\nIsso APAGA o arquivo do servidor. Não dá pra desfazer.`, "Excluir", true);
+  const ok = await confirmModal(t("video.delete.confirm", { name }), t("video.delete.btn"), true);
   if (!ok) return;
   const r = await api("DELETE", "/_api/assets/" + id);
-  if (!r.ok) { toast("Não foi possível excluir.", "err"); return; }
-  toast("Vídeo excluído.", "ok");
+  if (!r.ok) { toast(t("video.delete.fail"), "err"); return; }
+  toast(t("video.deleted"), "ok");
   render();
 }
 
 // ---- Dispositivos (chaves do app Fframe Uploader) ---------------------------
 async function renderDevices() {
-  $("title").textContent = "Dispositivos";
+  $("title").textContent = t("title.devices");
   const devices = await (await api("GET", "/_api/devices")).json();
   const active = devices.filter((d) => !d.revoked_at);
-  $("count").textContent = active.length + " ativo(s)";
+  $("count").textContent = t("count.devices", { n: active.length });
   const content = $("content");
   const rows = devices.slice()
     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
     .map(devRowHtml).join("");
+  const note = t("dev.appLangNote");
   content.innerHTML =
     `<div class="dev-head">
-      <p class="dev-hint">Cada aparelho com o app Fframe Uploader usa a própria chave. Revogar corta o acesso na hora (o histórico fica guardado).</p>
-      <button id="add-device" class="btn-primary" type="button">＋ Adicionar dispositivo</button>
+      <div class="dev-hint-wrap">
+        <p class="dev-hint">${escapeHtml(t("dev.hint"))}</p>
+        ${note ? `<p class="dev-note">${escapeHtml(note)}</p>` : ""}
+      </div>
+      <button id="add-device" class="btn-primary" type="button">${escapeHtml(t("dev.add"))}</button>
     </div>` +
     (devices.length ? `<div class="dev-list">${rows}</div>`
-      : '<div class="empty"><div class="big">📱</div>Nenhum dispositivo ainda.<br>Adicione um pra gerar a chave do app.</div>');
+      : `<div class="empty"><div class="big">📱</div>${escapeHtml(t("empty.devices.title"))}<br>${escapeHtml(t("empty.devices.hint"))}</div>`);
   $("add-device").addEventListener("click", novoDispositivo);
   content.querySelectorAll("[data-revoke]").forEach((b) =>
     b.addEventListener("click", () => revogarDispositivo(b.dataset.revoke, b.dataset.name)));
@@ -245,36 +252,37 @@ async function renderDevices() {
 }
 function devRowHtml(d) {
   const revoked = !!d.revoked_at;
-  const dt = (s) => { try { return new Date(s).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }); } catch { return ""; } };
+  const sub = t("dev.createdAt", { date: fmtDay(d.created_at) })
+    + (revoked ? t("dev.revokedAt", { date: fmtDay(d.revoked_at) }) : "");
   return `<div class="dev-row${revoked ? " revoked" : ""}">
     <div class="dev-info">
       <div class="dev-nm">${escapeHtml(d.name)}</div>
-      <div class="dev-sub">criado em ${dt(d.created_at)}${revoked ? " · revogado em " + dt(d.revoked_at) : ""}</div>
+      <div class="dev-sub">${escapeHtml(sub)}</div>
     </div>
-    <span class="badge ${revoked ? "off" : "on"}">${revoked ? "revogado" : "ativo"}</span>
+    <span class="badge ${revoked ? "off" : "on"}">${escapeHtml(revoked ? t("dev.badge.revoked") : t("dev.badge.active"))}</span>
     <span class="acts">${revoked ? "" :
-      `<button class="act" type="button" data-showkey="${d.id}">chave</button>
-      <button class="act danger" type="button" data-revoke="${d.id}" data-name="${escapeHtml(d.name)}">revogar</button>`}
+      `<button class="act" type="button" data-showkey="${d.id}">${escapeHtml(t("dev.act.key"))}</button>
+      <button class="act danger" type="button" data-revoke="${d.id}" data-name="${escapeHtml(d.name)}">${escapeHtml(t("dev.act.revoke"))}</button>`}
     </span>
   </div>`;
 }
 async function novoDispositivo() {
-  const name = await promptModal("Novo dispositivo", "Nome (ex.: Celular do Ciro)");
+  const name = await promptModal(t("dev.new.title"), t("dev.new.placeholder"));
   if (!name || !name.trim()) return;
   const r = await api("POST", "/_api/devices", { name: name.trim() });
   const d = await r.json().catch(() => null);
-  if (!r.ok || !d || !d.key) { toast((d && d.error) || "Não foi possível criar.", "err"); return; }
-  toast("Dispositivo criado.", "ok");
+  if (!r.ok || !d || !d.key) { toast((d && d.error) || t("dev.create.fail"), "err"); return; }
+  toast(t("dev.created"), "ok");
   await renderDevices();
   keyModal(d);
 }
 async function revogarDispositivo(id, name) {
-  const ok = await confirmModal(`Revogar o dispositivo "${name}"?\nO app com essa chave perde o acesso imediatamente.`, "Revogar", true);
+  const ok = await confirmModal(t("dev.revoke.confirm", { name }), t("dev.revoke.btn"), true);
   if (!ok) return;
   const r = await api("DELETE", "/_api/devices/" + id);
   const data = await r.json().catch(() => ({}));
-  if (!data.ok) { toast(data.error || "Não foi possível revogar.", "err"); return; }
-  toast("Dispositivo revogado.", "ok");
+  if (!data.ok) { toast(data.error || t("dev.revoke.fail"), "err"); return; }
+  toast(t("dev.revoked"), "ok");
   renderDevices();
 }
 // Modal com QR code + chave em texto (pra configurar o app Fframe Uploader).
@@ -283,12 +291,12 @@ function keyModal(d) {
   back.innerHTML =
     `<div class="modal-card">
       <h3>${escapeHtml(d.name)}</h3>
-      <p class="modal-msg">Escaneie o QR no app Fframe Uploader, ou copie a chave e cole manualmente.</p>
+      <p class="modal-msg">${escapeHtml(t("dev.key.hint"))}</p>
       <div class="qr-wrap"><div id="qr-box"></div></div>
       <code class="key-text" id="key-text">${escapeHtml(d.key)}</code>
       <div class="modal-acts">
-        <button class="btn-ghost" data-act="copy" type="button">Copiar chave</button>
-        <button class="btn-primary" data-act="ok" type="button">Fechar</button>
+        <button class="btn-ghost" data-act="copy" type="button">${escapeHtml(t("dev.key.copy"))}</button>
+        <button class="btn-primary" data-act="ok" type="button">${escapeHtml(t("dev.key.close"))}</button>
       </div>
     </div>`;
   back.classList.add("show");
@@ -304,12 +312,12 @@ function keyModal(d) {
   back.querySelector('[data-act="ok"]').addEventListener("click", close);
   back.addEventListener("click", (e) => { if (e.target === back) close(); });
   back.querySelector('[data-act="copy"]').addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(d.key); toast("Chave copiada.", "ok"); }
+    try { await navigator.clipboard.writeText(d.key); toast(t("dev.key.copied"), "ok"); }
     catch {
       const rng = document.createRange(); rng.selectNodeContents(back.querySelector("#key-text"));
       const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rng);
       const ok = document.execCommand && document.execCommand("copy");
-      toast(ok ? "Chave copiada." : "Não deu pra copiar — a chave está selecionada.", ok ? "ok" : "err");
+      toast(ok ? t("dev.key.copied") : t("dev.key.copyFail"), ok ? "ok" : "err");
     }
   });
 }

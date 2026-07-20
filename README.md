@@ -13,6 +13,8 @@ painel web para organizar, assistir e compartilhar.
 [![Android](https://img.shields.io/badge/app-Android%208%2B-3DDC84?logo=android&logoColor=white)](android-app)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contribuindo)
 
+🌐 **[Português](README.md)** · [English](README.en.md)
+
 </div>
 
 ---
@@ -55,6 +57,7 @@ flowchart LR
 - 🫧 **Bolha flutuante** sobre qualquer app de câmera — não precisa ser um app específico
 - 📷 **Pareamento por QR code** — escaneia e já está configurado, sem digitar servidor/chave
 - 🔑 **Múltiplos dispositivos, cada um com sua própria chave**, revogável individualmente pelo painel
+- 🌐 **Painel bilíngue** (português e inglês) com troca de idioma na hora, sem recarregar
 - 🗂️ Painel web (PWA): projetos, galeria, player, exclusão
 - 📥 Fila de envio (retoma sozinho quando a rede volta)
 
@@ -84,6 +87,17 @@ qualquer app de câmera e o vídeo sobe sozinho.
 
 Detalhes de configuração, variáveis de ambiente e compilação: veja os READMEs de
 [`server/`](server/README.md) e [`android-app/`](android-app/README.md).
+
+## Idiomas
+
+| Parte | Idiomas |
+|---|---|
+| 🖥️ **Painel web** | 🇧🇷 Português e 🇬🇧 Inglês — troca por um **menu suspenso** (na tela de login e na barra lateral). A escolha fica salva no navegador e vale também para datas e horas. Na primeira visita, o idioma é detectado pelo navegador. |
+| 📱 **App Android** | 🇧🇷 **Apenas português.** A interface do app não é traduzida. |
+
+Para **adicionar um idioma novo** ao painel, acrescente um bloco em
+[`server/public/i18n.js`](server/public/i18n.js) com as mesmas chaves — o menu suspenso passa a
+mostrar a opção automaticamente, sem mexer em mais nada. Chaves que faltarem caem no português.
 
 ## Rodando em Proxmox
 

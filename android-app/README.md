@@ -1,7 +1,12 @@
 # Fframe Uploader
 
+🌐 **[Português](README.md)** · [English](README.en.md)
+
 App Android que envia os vídeos gravados por **qualquer app de câmera** para o **seu próprio
 servidor**, criando uma versão **proxy** (mais leve) no aparelho antes do envio.
+
+> 🌐 **Idioma:** a interface do app é **só em português**. O painel web do servidor é bilíngue
+> (português e inglês, com menu suspenso).
 
 Funciona junto com o [servidor Fframe](../server) (compatível com Frame.io C2C e com este app).
 

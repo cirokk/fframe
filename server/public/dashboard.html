@@ -17,13 +17,16 @@
 <!-- Overlay de login / primeiro acesso -->
 <div id="auth" class="auth hidden">
   <form id="auth-card" class="auth-card" autocomplete="off">
-    <div class="auth-brand"><span class="dot"></span><b>Fframe</b></div>
+    <div class="auth-top">
+      <div class="auth-brand"><span class="dot"></span><b>Fframe</b></div>
+      <select class="lang-select" id="auth-lang"></select>
+    </div>
     <h2 id="auth-title">Entrar</h2>
     <p id="auth-sub" class="auth-sub"></p>
-    <input id="auth-user" class="fld" type="text" placeholder="Usuário" autocomplete="username" />
-    <input id="auth-pass" class="fld" type="password" placeholder="Senha" autocomplete="current-password" />
-    <input id="auth-pass2" class="fld hidden" type="password" placeholder="Repita a senha" autocomplete="new-password" />
-    <label class="check"><input id="auth-remember" type="checkbox" checked /> <span>Manter conectado</span></label>
+    <input id="auth-user" class="fld" type="text" data-i18n-ph="auth.user" placeholder="Usuário" autocomplete="username" />
+    <input id="auth-pass" class="fld" type="password" data-i18n-ph="auth.pass" placeholder="Senha" autocomplete="current-password" />
+    <input id="auth-pass2" class="fld hidden" type="password" data-i18n-ph="auth.pass2" placeholder="Repita a senha" autocomplete="new-password" />
+    <label class="check"><input id="auth-remember" type="checkbox" checked /> <span data-i18n="auth.remember">Manter conectado</span></label>
     <div id="auth-err" class="auth-err"></div>
     <button id="auth-btn" class="btn-primary" type="submit">Entrar</button>
   </form>
@@ -34,19 +37,23 @@
   <div id="scrim" class="scrim"></div>
   <aside id="side">
     <div class="brand"><span class="dot"></span><div><b>Fframe</b><span id="host">frame.io</span></div></div>
-    <div class="side-h">Projetos</div>
+    <div class="side-h" data-i18n="side.projects">Projetos</div>
     <div id="projects"></div>
-    <button id="new-proj" class="newbtn" type="button">＋ Novo Projeto</button>
-    <div class="side-h">Configurações</div>
-    <div id="nav-devices" class="proj"><span class="nm">📱 Dispositivos</span></div>
+    <button id="new-proj" class="newbtn" type="button" data-i18n="side.newProject">＋ Novo Projeto</button>
+    <div class="side-h" data-i18n="side.settings">Configurações</div>
+    <div id="nav-devices" class="proj"><span class="nm" data-i18n="side.devices">📱 Dispositivos</span></div>
+    <div class="lang-row">
+      <span class="lang-ic" aria-hidden="true">🌐</span>
+      <select class="lang-select" id="side-lang"></select>
+    </div>
     <div class="foot">
       <div id="total">—</div>
-      <button id="logout" class="linkbtn" type="button">Sair</button>
+      <button id="logout" class="linkbtn" type="button" data-i18n="side.logout">Sair</button>
     </div>
   </aside>
   <main>
     <div class="top">
-      <button id="menu" class="menu" type="button" aria-label="menu">☰</button>
+      <button id="menu" class="menu" type="button" data-i18n-aria="menu.aria" aria-label="menu">☰</button>
       <h1 id="title">Todos os vídeos</h1>
       <span class="sub" id="count"></span>
     </div>
@@ -62,6 +69,7 @@
 <div id="modal" class="modal"></div>
 
 <script src="/qrcode.min.js" defer></script>
+<script src="/i18n.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

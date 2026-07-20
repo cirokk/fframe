@@ -1,8 +1,8 @@
 // Service worker do PWA. Estrategia: rede-primeiro para o "shell" (fica sempre
 // atualizado online e funciona offline pelo cache). NUNCA intercepta dados
 // privados nem os endpoints do app (deixa passar direto pra rede).
-const CACHE = "fframe-shell-v3";
-const SHELL = ["/", "/app.css", "/app.js", "/qrcode.min.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png"];
+const CACHE = "fframe-shell-v4";
+const SHELL = ["/", "/app.css", "/app.js", "/i18n.js", "/qrcode.min.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()).catch(() => {}));

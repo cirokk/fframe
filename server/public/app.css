@@ -15,7 +15,8 @@ body{background:var(--dark);color:var(--ink);
   display:flex;align-items:center;justify-content:center;padding:20px}
 .auth-card{background:var(--charcoal);border:1px solid var(--line);border-radius:18px;padding:28px 24px;
   width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.auth-brand{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.auth-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.auth-brand{display:flex;align-items:center;gap:9px}
 .auth-brand b{font-size:15px}
 .auth h2{margin:2px 0 0;font-size:20px}
 .auth-sub{margin:0 0 6px;color:var(--muted);font-size:13px;line-height:1.5}
@@ -47,7 +48,20 @@ aside{background:var(--charcoal);border-right:1px solid var(--line);padding:22px
 .newbtn{margin-top:10px;display:flex;gap:8px;align-items:center;justify-content:center;padding:11px;border-radius:10px;
   background:var(--royal);color:#fff;font-weight:600;font-size:13.5px;cursor:pointer;border:none;transition:.15s}
 .newbtn:hover{filter:brightness(1.1)}
-.foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
+/* ---- Seletor de idioma (dropdown) ---- */
+.lang-select{appearance:none;-webkit-appearance:none;background:var(--dark);border:1px solid var(--line);
+  color:var(--muted);border-radius:9px;padding:7px 26px 7px 10px;font-size:12.5px;cursor:pointer;
+  font-family:inherit;outline:none;transition:.15s;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='%239A9AA6' d='M6 8.2 2.4 4.6l.9-.9L6 6.4l2.7-2.7.9.9z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;background-size:11px}
+.lang-select:hover{color:var(--ink);border-color:#3a3a44}
+.lang-select:focus{border-color:var(--royal)}
+.lang-select option{background:var(--charcoal);color:var(--ink)}
+.lang-row{display:flex;align-items:center;gap:9px;margin-top:auto;padding:10px 8px 0}
+.lang-row .lang-ic{font-size:13px;opacity:.6;flex:0 0 auto}
+.lang-row .lang-select{flex:1;min-width:0}
+
+.foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
   font-size:11px;color:var(--muted);padding:10px 8px 2px;font-family:ui-monospace,monospace}
 .linkbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 12px;
   cursor:pointer;font-size:12px}
@@ -124,7 +138,10 @@ main{padding:22px 26px 60px;overflow:auto}
 
 /* ---- Dispositivos ---- */
 .dev-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
-.dev-hint{margin:0;color:var(--muted);font-size:13px;line-height:1.5;max-width:520px}
+.dev-hint-wrap{flex:1;min-width:240px;max-width:520px}
+.dev-hint{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.dev-note{margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.5;opacity:.85;
+  border-left:2px solid var(--line);padding-left:9px}
 .dev-head .btn-primary{padding:11px 16px;font-size:13.5px;flex:0 0 auto}
 .dev-list{display:flex;flex-direction:column;gap:10px;max-width:680px}
 .dev-row{display:flex;align-items:center;gap:12px;background:var(--charcoal);border:1px solid var(--line);
