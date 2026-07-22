@@ -15,8 +15,7 @@ body{background:var(--dark);color:var(--ink);
   display:flex;align-items:center;justify-content:center;padding:20px}
 .auth-card{background:var(--charcoal);border:1px solid var(--line);border-radius:18px;padding:28px 24px;
   width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.auth-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
-.auth-brand{display:flex;align-items:center;gap:9px}
+.auth-brand{display:flex;align-items:center;gap:9px;margin-bottom:4px}
 .auth-brand b{font-size:15px}
 .auth h2{margin:2px 0 0;font-size:20px}
 .auth-sub{margin:0 0 6px;color:var(--muted);font-size:13px;line-height:1.5}
@@ -182,12 +181,17 @@ main{padding:22px 26px 60px;overflow:auto}
 .card .cmt-badge{position:absolute;top:8px;right:8px;background:rgba(10,10,11,.72);backdrop-filter:blur(2px);
   color:#fff;border-radius:999px;padding:3px 8px;font-size:11px;font-family:ui-monospace,monospace;pointer-events:none}
 
-/* revisao empilhada em telas estreitas */
+/* revisao empilhada em telas estreitas: a tela inteira rola, video no topo e a
+   caixa de comentar logo abaixo dele (antes da lista). */
 @media(max-width:860px){
-  .player-inner{flex-direction:column;max-height:94vh;overflow:auto}
-  .player-side{flex:1 1 auto}
-  .player-video{max-height:50vh}
-  .cmt-list{max-height:32vh}
+  .player{padding:0}
+  .player-inner{flex-direction:column;width:100%;height:100%;max-height:100%;gap:0;overflow-y:auto;overflow-x:hidden}
+  .player-main{flex:0 0 auto;padding:12px 12px 0;gap:8px}
+  .player-video{max-height:44vh}
+  .player-side{flex:0 0 auto;border:none;border-radius:0;border-top:1px solid var(--line);margin-top:10px;gap:12px}
+  .cmt-head{order:-2}
+  .cmt-compose{order:-1;border-top:none;border-bottom:1px solid var(--line);padding-top:0;padding-bottom:12px}
+  .cmt-list{max-height:none;overflow:visible}
 }
 
 /* ---- Dispositivos ---- */
@@ -221,9 +225,11 @@ main{padding:22px 26px 60px;overflow:auto}
 /* ---- Mobile: sidebar vira gaveta ---- */
 @media(max-width:760px){
   .app{grid-template-columns:1fr}
-  aside{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:300px;z-index:40;
+  /* #side (nao "aside" generico): a gaveta e so a barra lateral. O painel de
+     comentarios do player tambem e um <aside> e nao pode virar gaveta fixa. */
+  #side{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:300px;z-index:40;
     transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 0 40px rgba(0,0,0,.5)}
-  .app.open aside{transform:translateX(0)}
+  .app.open #side{transform:translateX(0)}
   .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;opacity:0;pointer-events:none;transition:.2s}
   .app.open .scrim{opacity:1;pointer-events:auto}
   .menu{display:block}
