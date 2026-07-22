@@ -240,7 +240,7 @@ function openPlayer(id, name) {
           <div class="cmt-when">
             <span class="chip" id="cmt-chip"></span>
             <button type="button" class="cmt-reset" id="cmt-reset" hidden>↺ ${escapeHtml(t("cmt.now"))}</button>
-            <button type="button" class="cmt-out" id="cmt-out">${escapeHtml(t("cmt.markOut"))}</button>
+            <button type="button" class="cmt-out" id="cmt-out">${escapeHtml(t("cmt.markIn"))}</button>
           </div>
           <textarea id="cmt-text" rows="2"></textarea>
           <button class="btn-primary" id="cmt-send" type="submit">${escapeHtml(t("cmt.send"))}</button>
@@ -251,8 +251,9 @@ function openPlayer(id, name) {
 
   const video = p.querySelector("video");
   let comments = [];
-  let composeTime = null;   // in-point congelado (null = segue o playhead)
-  let composeEnd = null;    // out-point opcional (trecho)
+  let composeTime = null;   // ponto congelado (comentario de ponto; null = segue o playhead)
+  let markIn = null;        // inicio do trecho (marcado explicitamente)
+  let markOut = null;       // fim do trecho (marcado explicitamente)
   let duration = 0;
   let fps = 24;             // fps atual (default; refinado por deteccao ou manual)
   let fpsAuto = true;       // "auto" = detecta pelos frames; senao usa o valor escolhido
@@ -345,17 +346,28 @@ function openPlayer(id, name) {
     el("pv-pins").querySelectorAll(".pv-pin").forEach((pin) => pin.classList.toggle("active", pin.dataset.id === cid));
   }
 
-  // ---- Compose (in-point + trecho opcional) ---------------------------------
+  // ---- Compose: ponto (padrao) ou trecho (marcar inicio -> marcar fim) ------
   function updateChip() {
-    const inT = composeTime != null ? composeTime : video.currentTime;
-    el("cmt-chip").textContent = composeEnd != null
-      ? t("cmt.range", { from: fmtClock(inT), to: fmtClock(composeEnd) })
-      : t("cmt.at", { time: fmtClock(inT) });
-    textEl().placeholder = t("cmt.placeholder", { time: fmtClock(inT) });
-    el("cmt-out").textContent = composeEnd != null ? t("cmt.clearOut") : t("cmt.markOut");
+    const out = el("cmt-out");
+    if (markIn != null && markOut != null) {          // trecho completo
+      el("cmt-chip").textContent = t("cmt.range", { from: fmtClock(markIn), to: fmtClock(markOut) });
+      out.textContent = t("cmt.clearOut");
+      textEl().placeholder = t("cmt.placeholder", { time: fmtClock(markIn) });
+    } else if (markIn != null) {                       // inicio marcado, esperando o fim
+      el("cmt-chip").textContent = t("cmt.rangeStart", { from: fmtClock(markIn) });
+      out.textContent = t("cmt.markOut");
+      textEl().placeholder = t("cmt.placeholder", { time: fmtClock(markIn) });
+    } else {                                           // comentario de ponto
+      const inT = composeTime != null ? composeTime : video.currentTime;
+      el("cmt-chip").textContent = t("cmt.at", { time: fmtClock(inT) });
+      out.textContent = t("cmt.markIn");
+      textEl().placeholder = t("cmt.placeholder", { time: fmtClock(inT) });
+    }
+    // "usar momento atual" so aparece no modo ponto, com o ponto congelado
+    el("cmt-reset").hidden = !(composeTime != null && markIn == null);
   }
-  function freeze() { if (composeTime == null) { composeTime = video.currentTime; video.pause(); el("cmt-reset").hidden = false; updateChip(); } }
-  function unfreeze() { composeTime = null; composeEnd = null; el("cmt-reset").hidden = true; updateChip(); }
+  function freeze() { if (composeTime == null && markIn == null) { composeTime = video.currentTime; video.pause(); updateChip(); } }
+  function unfreeze() { composeTime = null; markIn = null; markOut = null; updateChip(); }
 
   // ---- Lista de comentarios (threads + trecho) ------------------------------
   function renderList() {
@@ -419,9 +431,9 @@ function openPlayer(id, name) {
     ev.preventDefault();
     const text = textEl().value.trim();
     if (!text) return;
-    const inT = composeTime != null ? composeTime : video.currentTime;
-    const body = { t: inT, text };
-    if (composeEnd != null && composeEnd > inT + 0.05) body.t_end = composeEnd;
+    let body;
+    if (markIn != null && markOut != null && markOut > markIn + 0.05) body = { t: markIn, t_end: markOut, text };
+    else body = { t: (composeTime != null ? composeTime : video.currentTime), text };
     const btn = el("cmt-send"); btn.disabled = true; btn.textContent = t("cmt.sending");
     try {
       const r = await api("POST", `/_api/assets/${id}/comments`, body);
@@ -470,11 +482,17 @@ function openPlayer(id, name) {
   video.addEventListener("ended", setPlayIcon);
 
   textEl().addEventListener("focus", freeze);
-  el("cmt-reset").addEventListener("click", () => { composeTime = video.currentTime; composeEnd = null; updateChip(); textEl().focus(); });
+  el("cmt-reset").addEventListener("click", () => { composeTime = video.currentTime; markIn = null; markOut = null; updateChip(); textEl().focus(); });
+  // Botao de trecho, progressivo: marcar inicio -> marcar fim -> limpar.
   el("cmt-out").addEventListener("click", () => {
-    if (composeEnd != null) { composeEnd = null; updateChip(); return; }
-    freeze();
-    composeEnd = video.currentTime > composeTime + 0.05 ? video.currentTime : composeTime + 1;
+    video.pause();
+    if (markIn != null && markOut != null) { markIn = null; markOut = null; updateChip(); return; }   // limpar
+    if (markIn == null) {                                                                              // marcar inicio
+      markIn = video.currentTime; composeTime = null;
+      toast(t("cmt.rangeStarted", { from: fmtClock(markIn) }), "ok");
+    } else if (video.currentTime > markIn + 0.05) {                                                    // marcar fim
+      markOut = video.currentTime;
+    } else { toast(t("cmt.rangeEndAfter"), "err"); return; }
     updateChip();
   });
   el("cmt-compose").addEventListener("submit", submit);
