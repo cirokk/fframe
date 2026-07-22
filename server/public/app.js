@@ -171,17 +171,27 @@ function cardHtml(a) {
     </div></div>`;
 }
 
-// Formata segundos como M:SS (ou H:MM:SS em videos longos).
+// Formata segundos como M:SS (ou H:MM:SS em videos longos) — rotulos compactos.
 function fmtClock(s) {
   s = Math.max(0, Math.floor(Number(s) || 0));
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
   const mm = h ? String(m).padStart(2, "0") : String(m);
   return (h ? h + ":" : "") + mm + ":" + String(ss).padStart(2, "0");
 }
+// Timecode HH:MM:SS:FF (frame) estilo Frame.io. fps = quadros por segundo.
+function fmtTC(s, fps) {
+  s = Math.max(0, Number(s) || 0);
+  const total = Math.floor(s);
+  const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), ss = total % 60;
+  let ff = Math.round((s - total) * fps); if (ff >= fps) ff = fps - 1;
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(h)}:${p(m)}:${p(ss)}:${p(ff)}`;
+}
 // Autor "device:Celular do Ciro" -> "Celular do Ciro".
 const authorLabel = (a) => (a ? String(a).replace(/^device:/, "") : "—");
 
-// Player em tela cheia (assistir grande) com comentarios ancorados no tempo.
+// Player de revisao estilo Frame.io: barra propria com pins na timeline,
+// timecode, passo frame a frame, atalhos, e comentarios (trecho + respostas).
 function openPlayer(id, name) {
   const p = $("player");
   p.innerHTML =
@@ -191,9 +201,36 @@ function openPlayer(id, name) {
           <span class="player-name">${escapeHtml(name)}</span>
           <button class="player-close" type="button" data-close aria-label="${escapeHtml(t("player.close"))}">✕</button>
         </div>
-        <div class="player-stage">
-          <video class="player-video" src="/_media/${id}" controls autoplay playsinline></video>
-          <div class="tl-markers" id="tl-markers"></div>
+        <div class="pv" id="pv">
+          <div class="pv-stage" id="pv-stage">
+            <video class="player-video" src="/_media/${id}" playsinline></video>
+            <button class="pv-bigplay" id="pv-bigplay" type="button" aria-label="${escapeHtml(t("pv.play"))}">▶</button>
+          </div>
+          <div class="pv-ctl">
+            <div class="pv-scrub" id="pv-scrub">
+              <div class="pv-track">
+                <div class="pv-buffered" id="pv-buffered"></div>
+                <div class="pv-progress" id="pv-progress"></div>
+                <div class="pv-pins" id="pv-pins"></div>
+                <div class="pv-head" id="pv-head"></div>
+              </div>
+            </div>
+            <div class="pv-btns">
+              <button class="pv-b" id="pv-play" type="button" aria-label="${escapeHtml(t("pv.play"))}">▶</button>
+              <button class="pv-b" id="pv-fb" type="button" title="${escapeHtml(t("pv.frameBack"))}" aria-label="${escapeHtml(t("pv.frameBack"))}">◀|</button>
+              <button class="pv-b" id="pv-ff" type="button" title="${escapeHtml(t("pv.frameFwd"))}" aria-label="${escapeHtml(t("pv.frameFwd"))}">|▶</button>
+              <span class="pv-tc" id="pv-tc" title="${escapeHtml(t("pv.shortcuts"))}">00:00:00:00</span>
+              <span class="pv-dur" id="pv-dur">/ 00:00:00:00</span>
+              <select class="pv-fps" id="pv-fps" title="${escapeHtml(t("pv.fps"))}" aria-label="${escapeHtml(t("pv.fps"))}">
+                <option value="auto">fps: auto</option>
+                <option value="23.976">23.976</option><option value="24">24</option><option value="25">25</option>
+                <option value="29.97">29.97</option><option value="30">30</option><option value="50">50</option><option value="60">60</option>
+              </select>
+              <span class="pv-spacer"></span>
+              <button class="pv-b" id="pv-mute" type="button" aria-label="${escapeHtml(t("pv.mute"))}">🔊</button>
+              <button class="pv-b" id="pv-fs" type="button" aria-label="${escapeHtml(t("pv.fullscreen"))}">⛶</button>
+            </div>
+          </div>
         </div>
       </div>
       <aside class="player-side">
@@ -203,6 +240,7 @@ function openPlayer(id, name) {
           <div class="cmt-when">
             <span class="chip" id="cmt-chip"></span>
             <button type="button" class="cmt-reset" id="cmt-reset" hidden>↺ ${escapeHtml(t("cmt.now"))}</button>
+            <button type="button" class="cmt-out" id="cmt-out">${escapeHtml(t("cmt.markOut"))}</button>
           </div>
           <textarea id="cmt-text" rows="2"></textarea>
           <button class="btn-primary" id="cmt-send" type="submit">${escapeHtml(t("cmt.send"))}</button>
@@ -213,116 +251,261 @@ function openPlayer(id, name) {
 
   const video = p.querySelector("video");
   let comments = [];
-  let composeTime = null; // null = segue o playhead; numero = congelado no momento comentado
+  let composeTime = null;   // in-point congelado (null = segue o playhead)
+  let composeEnd = null;    // out-point opcional (trecho)
   let duration = 0;
+  let fps = 24;             // fps atual (default; refinado por deteccao ou manual)
+  let fpsAuto = true;       // "auto" = detecta pelos frames; senao usa o valor escolhido
+  let activeId = null;      // comentario "aceso" pelo playhead
+  let replyTo = null;       // id do comentario sendo respondido
 
-  const textEl = () => $("cmt-text");
-  const seek = (sec) => { try { video.currentTime = sec; video.pause(); } catch {} };
+  const el = (i) => document.getElementById(i);
+  const textEl = () => el("cmt-text");
+  const seek = (sec) => { try { video.currentTime = Math.max(0, Math.min(duration || sec, sec)); } catch {} };
+  const frameStep = (dir) => { video.pause(); seek(video.currentTime + dir / fps); };
+  const togglePlay = () => { if (video.paused) video.play().catch(() => {}); else video.pause(); };
 
-  function updateChip() {
-    const time = composeTime != null ? composeTime : video.currentTime;
-    $("cmt-chip").textContent = t("cmt.at", { time: fmtClock(time) });
-    textEl().placeholder = t("cmt.placeholder", { time: fmtClock(time) });
+  // ---- Deteccao de fps (requestVideoFrameCallback quando existe) -------------
+  let fpsDetected = false;
+  function detectFps() {
+    if (!fpsAuto || fpsDetected || !video.requestVideoFrameCallback) return;
+    let last = null; const samples = [];
+    const cb = (now, meta) => {
+      if (!fpsAuto) return;
+      if (last != null && meta.mediaTime > last) { const d = meta.mediaTime - last; if (d > 0.001 && d < 0.2) samples.push(d); }
+      last = meta.mediaTime;
+      if (samples.length < 12 && !video.paused) { video.requestVideoFrameCallback(cb); return; }
+      if (samples.length >= 5) {
+        samples.sort((a, b) => a - b);
+        const guess = Math.round(1 / samples[Math.floor(samples.length / 2)]);
+        if (guess >= 12 && guess <= 120) { fps = guess; fpsDetected = true; updateTC(); }
+      }
+    };
+    video.requestVideoFrameCallback(cb);
   }
-  function freeze() { // ao focar pra escrever, congela o momento e pausa o video
-    if (composeTime == null) { composeTime = video.currentTime; video.pause(); $("cmt-reset").hidden = false; updateChip(); }
-  }
-  function unfreeze() { composeTime = null; $("cmt-reset").hidden = true; updateChip(); }
 
-  function renderMarkers() {
-    const box = $("tl-markers");
-    if (!box) return;
-    box.innerHTML = !duration ? "" : comments.map((c) =>
-      `<button class="tl-mark${c.resolved ? " done" : ""}" type="button" data-seek="${c.t}"
-        title="${escapeHtml(authorLabel(c.author) + ": " + c.text)}"></button>`).join("");
-    // Posicao setada via JS (CSSOM), nao por atributo style inline — a CSP do
-    // servidor (default-src 'self', sem 'unsafe-inline') bloqueia style="" no markup.
-    box.querySelectorAll(".tl-mark").forEach((b) => {
-      if (duration) b.style.left = (parseFloat(b.dataset.seek) / duration * 100).toFixed(3) + "%";
-      b.addEventListener("click", () => seek(parseFloat(b.dataset.seek)));
+  // ---- Barra de reprodução ---------------------------------------------------
+  function updateTC() {
+    el("pv-tc").textContent = fmtTC(video.currentTime, fps);
+    el("pv-dur").textContent = "/ " + fmtTC(duration, fps);
+  }
+  function updateScrub() {
+    const pct = duration ? (video.currentTime / duration * 100) : 0;
+    el("pv-progress").style.width = pct + "%";
+    el("pv-head").style.left = pct + "%";
+    try { if (video.buffered.length) el("pv-buffered").style.width = (duration ? video.buffered.end(video.buffered.length - 1) / duration * 100 : 0) + "%"; } catch {}
+  }
+  function setPlayIcon() {
+    const playing = !video.paused && !video.ended;
+    el("pv-play").textContent = playing ? "⏸" : "▶";
+    el("pv-play").setAttribute("aria-label", playing ? t("pv.pause") : t("pv.play"));
+    el("pv-bigplay").style.display = playing ? "none" : "flex";
+  }
+
+  // Scrubbing (clique + arrasto)
+  const scrub = el("pv-scrub");
+  const seekFromEvent = (clientX) => { const r = scrub.getBoundingClientRect(); seek(Math.max(0, Math.min(1, (clientX - r.left) / r.width)) * duration); };
+  let scrubbing = false;
+  scrub.addEventListener("pointerdown", (e) => { scrubbing = true; try { scrub.setPointerCapture(e.pointerId); } catch {} seekFromEvent(e.clientX); });
+  scrub.addEventListener("pointermove", (e) => { if (scrubbing) seekFromEvent(e.clientX); });
+  scrub.addEventListener("pointerup", (e) => { scrubbing = false; try { scrub.releasePointerCapture(e.pointerId); } catch {} });
+
+  // Pins de comentario NA barra (top-level; trecho vira uma faixa)
+  function renderPins() {
+    const box = el("pv-pins");
+    const tops = comments.filter((c) => !c.parent_id);
+    box.innerHTML = tops.map((c) =>
+      `<span class="pv-pin${c.t_end != null ? " range" : ""}${c.resolved ? " done" : ""}" data-id="${c.id}" title="${escapeHtml(authorLabel(c.author) + ": " + c.text)}"></span>`).join("");
+    box.querySelectorAll(".pv-pin").forEach((pin) => {
+      const c = tops.find((x) => x.id === pin.dataset.id);
+      if (!duration || !c) return;
+      pin.style.left = (c.t / duration * 100).toFixed(3) + "%";
+      if (c.t_end != null) pin.style.width = Math.max(0.6, (c.t_end - c.t) / duration * 100).toFixed(3) + "%";
+      pin.classList.toggle("active", c.id === activeId);
+      pin.addEventListener("click", (e) => { e.stopPropagation(); seek(c.t); highlight(c.id, true); });
     });
   }
+
+  // Comentario "aceso" conforme o playhead passa por ele
+  function activeAt(time) {
+    let cur = null;
+    comments.filter((c) => !c.parent_id).sort((a, b) => a.t - b.t).forEach((c) => {
+      const end = c.t_end != null ? c.t_end : c.t + 0.4;
+      if (time >= c.t - 0.05 && time <= end + 0.25) cur = c;
+    });
+    return cur ? cur.id : null;
+  }
+  function highlight(cid, doScroll) {
+    activeId = cid;
+    el("cmt-list").querySelectorAll(".cmt-item").forEach((it) => {
+      const on = it.dataset.id === cid;
+      it.classList.toggle("active", on);
+      if (on && doScroll) it.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+    el("pv-pins").querySelectorAll(".pv-pin").forEach((pin) => pin.classList.toggle("active", pin.dataset.id === cid));
+  }
+
+  // ---- Compose (in-point + trecho opcional) ---------------------------------
+  function updateChip() {
+    const inT = composeTime != null ? composeTime : video.currentTime;
+    el("cmt-chip").textContent = composeEnd != null
+      ? t("cmt.range", { from: fmtClock(inT), to: fmtClock(composeEnd) })
+      : t("cmt.at", { time: fmtClock(inT) });
+    textEl().placeholder = t("cmt.placeholder", { time: fmtClock(inT) });
+    el("cmt-out").textContent = composeEnd != null ? t("cmt.clearOut") : t("cmt.markOut");
+  }
+  function freeze() { if (composeTime == null) { composeTime = video.currentTime; video.pause(); el("cmt-reset").hidden = false; updateChip(); } }
+  function unfreeze() { composeTime = null; composeEnd = null; el("cmt-reset").hidden = true; updateChip(); }
+
+  // ---- Lista de comentarios (threads + trecho) ------------------------------
   function renderList() {
-    $("cmt-n").textContent = comments.length;
-    const list = $("cmt-list");
-    if (!comments.length) {
+    const tops = comments.filter((c) => !c.parent_id).sort((a, b) => a.t - b.t);
+    const repliesOf = (pid) => comments.filter((c) => c.parent_id === pid).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    el("cmt-n").textContent = comments.length;
+    const list = el("cmt-list");
+    if (!tops.length) {
       list.innerHTML = `<div class="cmt-empty">${escapeHtml(t("cmt.empty"))}<br><span>${escapeHtml(t("cmt.emptyHint"))}</span></div>`;
       return;
     }
-    list.innerHTML = comments.slice().sort((a, b) => a.t - b.t).map((c) =>
-      `<div class="cmt-item${c.resolved ? " done" : ""}">
+    const timeLabel = (c) => c.t_end != null ? t("cmt.range", { from: fmtClock(c.t), to: fmtClock(c.t_end) }) : fmtClock(c.t);
+    const replyHtml = (r) => `<div class="cmt-reply-item">
+        <div class="cmt-top"><span class="cmt-auth">${escapeHtml(authorLabel(r.author))}</span></div>
+        <div class="cmt-body">${escapeHtml(r.text)}</div>
+        <div class="cmt-acts"><button class="cmt-act danger" type="button" data-del="${r.id}">${escapeHtml(t("cmt.delete"))}</button></div>
+      </div>`;
+    list.innerHTML = tops.map((c) => {
+      const reps = repliesOf(c.id);
+      return `<div class="cmt-item${c.resolved ? " done" : ""}${c.id === activeId ? " active" : ""}" data-id="${c.id}">
         <div class="cmt-top">
-          <button class="cmt-time" type="button" data-seek="${c.t}" title="${escapeHtml(t("cmt.jump", { time: fmtClock(c.t) }))}">${fmtClock(c.t)}</button>
+          <button class="cmt-time" type="button" data-seek="${c.t}" title="${escapeHtml(t("cmt.jump", { time: fmtClock(c.t) }))}">${escapeHtml(timeLabel(c))}</button>
           <span class="cmt-auth">${escapeHtml(authorLabel(c.author))}</span>
         </div>
         <div class="cmt-body">${escapeHtml(c.text)}</div>
         <div class="cmt-acts">
+          <button class="cmt-act" type="button" data-reply="${c.id}">${escapeHtml(t("cmt.reply"))}</button>
           <button class="cmt-act" type="button" data-resolve="${c.id}" data-on="${c.resolved ? 1 : 0}">${escapeHtml(c.resolved ? t("cmt.reopen") : t("cmt.resolve"))}</button>
           <button class="cmt-act danger" type="button" data-del="${c.id}">${escapeHtml(t("cmt.delete"))}</button>
         </div>
-      </div>`).join("");
-    list.querySelectorAll("[data-seek]").forEach((b) => b.addEventListener("click", () => seek(parseFloat(b.dataset.seek))));
+        ${reps.length ? `<div class="cmt-replies">${reps.map(replyHtml).join("")}</div>` : ""}
+        ${replyTo === c.id ? `<form class="cmt-replybox" data-parent="${c.id}"><input class="fld" type="text" placeholder="${escapeHtml(t("cmt.replyPlaceholder"))}" /><button class="btn-primary" type="submit">${escapeHtml(t("cmt.replySend"))}</button></form>` : ""}
+      </div>`;
+    }).join("");
+    list.querySelectorAll("[data-seek]").forEach((b) => b.addEventListener("click", () => { seek(parseFloat(b.dataset.seek)); highlight(b.closest(".cmt-item").dataset.id, false); }));
     list.querySelectorAll("[data-resolve]").forEach((b) => b.addEventListener("click", () => toggleResolve(b.dataset.resolve, b.dataset.on !== "1")));
     list.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => delComment(b.dataset.del)));
+    list.querySelectorAll("[data-reply]").forEach((b) => b.addEventListener("click", () => { replyTo = replyTo === b.dataset.reply ? null : b.dataset.reply; renderList(); const inp = list.querySelector(".cmt-replybox input"); if (inp) inp.focus(); }));
+    list.querySelectorAll(".cmt-replybox").forEach((f) => f.addEventListener("submit", (e) => { e.preventDefault(); sendReply(f.dataset.parent, f.querySelector("input").value); }));
   }
 
   async function load() {
     try { comments = await (await api("GET", `/_api/assets/${id}/comments`)).json(); }
     catch { comments = []; }
-    renderList(); renderMarkers();
+    renderList(); renderPins();
   }
   async function toggleResolve(cid, resolved) {
     await api("PATCH", `/_api/assets/${id}/comments/${cid}`, { resolved });
     const c = comments.find((x) => x.id === cid); if (c) c.resolved = resolved;
-    renderList(); renderMarkers();
+    renderList(); renderPins();
   }
   async function delComment(cid) {
     const ok = await confirmModal(t("cmt.delete.confirm"), t("cmt.delete"), true);
     if (!ok) return;
     const r = await api("DELETE", `/_api/assets/${id}/comments/${cid}`);
     if (!r.ok) { toast(t("cmt.delete.fail"), "err"); return; }
-    comments = comments.filter((x) => x.id !== cid);
-    renderList(); renderMarkers(); toast(t("cmt.deleted"), "ok");
+    comments = comments.filter((x) => x.id !== cid && x.parent_id !== cid);
+    renderList(); renderPins(); toast(t("cmt.deleted"), "ok");
   }
   async function submit(ev) {
     ev.preventDefault();
     const text = textEl().value.trim();
     if (!text) return;
-    const when = composeTime != null ? composeTime : video.currentTime;
-    const btn = $("cmt-send"); btn.disabled = true; btn.textContent = t("cmt.sending");
+    const inT = composeTime != null ? composeTime : video.currentTime;
+    const body = { t: inT, text };
+    if (composeEnd != null && composeEnd > inT + 0.05) body.t_end = composeEnd;
+    const btn = el("cmt-send"); btn.disabled = true; btn.textContent = t("cmt.sending");
     try {
-      const r = await api("POST", `/_api/assets/${id}/comments`, { t: when, text });
+      const r = await api("POST", `/_api/assets/${id}/comments`, body);
       const c = await r.json().catch(() => null);
       if (!r.ok || !c || !c.id) { toast((c && c.error) || t("cmt.add.fail"), "err"); return; }
       comments.push(c);
       textEl().value = ""; unfreeze();
-      renderList(); renderMarkers(); toast(t("cmt.added"), "ok");
+      renderList(); renderPins(); toast(t("cmt.added"), "ok");
     } finally { btn.disabled = false; btn.textContent = t("cmt.send"); }
   }
+  async function sendReply(parentId, text) {
+    text = String(text || "").trim();
+    if (!text) return;
+    const r = await api("POST", `/_api/assets/${id}/comments`, { parent_id: parentId, text });
+    const c = await r.json().catch(() => null);
+    if (!r.ok || !c || !c.id) { toast(t("cmt.add.fail"), "err"); return; }
+    comments.push(c); replyTo = null;
+    renderList(); renderPins();
+  }
 
-  video.addEventListener("loadedmetadata", () => { duration = video.duration || 0; renderMarkers(); updateChip(); });
-  video.addEventListener("timeupdate", () => { if (composeTime == null) updateChip(); });
+  // ---- Ligações dos controles -----------------------------------------------
+  el("pv-play").addEventListener("click", togglePlay);
+  el("pv-bigplay").addEventListener("click", togglePlay);
+  video.addEventListener("click", togglePlay);
+  el("pv-fb").addEventListener("click", () => frameStep(-1));
+  el("pv-ff").addEventListener("click", () => frameStep(1));
+  el("pv-mute").addEventListener("click", () => { video.muted = !video.muted; el("pv-mute").textContent = video.muted ? "🔇" : "🔊"; });
+  el("pv-fs").addEventListener("click", () => { if (document.fullscreenElement) document.exitFullscreen(); else el("pv").requestFullscreen && el("pv").requestFullscreen(); });
+  el("pv-fps").addEventListener("change", (e) => {
+    const v = e.target.value;
+    if (v === "auto") { fpsAuto = true; fpsDetected = false; detectFps(); }
+    else { fpsAuto = false; fps = Number(v) || 24; }
+    updateTC();
+  });
+
+  video.addEventListener("loadedmetadata", () => { duration = video.duration || 0; updateTC(); updateScrub(); renderPins(); updateChip(); });
+  video.addEventListener("timeupdate", () => {
+    updateTC(); updateScrub();
+    if (composeTime == null) updateChip();
+    const a = activeAt(video.currentTime);
+    if (a !== activeId) highlight(a, !video.paused);
+  });
+  video.addEventListener("progress", updateScrub);
+  video.addEventListener("play", () => { setPlayIcon(); detectFps(); });
+  video.addEventListener("pause", setPlayIcon);
+  video.addEventListener("ended", setPlayIcon);
+
   textEl().addEventListener("focus", freeze);
-  $("cmt-reset").addEventListener("click", () => { composeTime = video.currentTime; updateChip(); textEl().focus(); });
-  $("cmt-compose").addEventListener("submit", submit);
-  updateChip();
+  el("cmt-reset").addEventListener("click", () => { composeTime = video.currentTime; composeEnd = null; updateChip(); textEl().focus(); });
+  el("cmt-out").addEventListener("click", () => {
+    if (composeEnd != null) { composeEnd = null; updateChip(); return; }
+    freeze();
+    composeEnd = video.currentTime > composeTime + 0.05 ? video.currentTime : composeTime + 1;
+    updateChip();
+  });
+  el("cmt-compose").addEventListener("submit", submit);
+  updateChip(); setPlayIcon();
   load();
+
+  // ---- Teclado (nao intercepta quando escrevendo) ---------------------------
+  const typing = () => { const a = document.activeElement; return a && (a.tagName === "TEXTAREA" || a.tagName === "INPUT"); };
+  const onKey = (e) => {
+    if (e.key === "Escape") { if (typing()) { document.activeElement.blur(); return; } close(); return; }
+    if (typing()) return;
+    switch (e.key) {
+      case " ": case "k": case "K": e.preventDefault(); togglePlay(); break;
+      case "j": case "J": seek(video.currentTime - 5); break;
+      case "l": case "L": seek(video.currentTime + 5); break;
+      case "ArrowLeft": e.preventDefault(); frameStep(-1); break;
+      case "ArrowRight": e.preventDefault(); frameStep(1); break;
+    }
+  };
 
   const close = () => {
     try { video.pause(); } catch {}
+    if (document.fullscreenElement) { try { document.exitFullscreen(); } catch {} }
     p.classList.remove("show");
     setTimeout(() => (p.innerHTML = ""), 200);
-    document.removeEventListener("keydown", onEsc);
-    render(); // atualiza o contador 💬 nos cards
-  };
-  const onEsc = (e) => {
-    if (e.key !== "Escape") return;
-    if (document.activeElement === textEl()) { textEl().blur(); return; } // Esc no texto: so desfoca
-    close();
+    document.removeEventListener("keydown", onKey);
+    render(); // atualiza o contador no card
   };
   p.querySelector("[data-close]").addEventListener("click", close);
   p.addEventListener("click", (e) => { if (e.target === p) close(); });
-  document.addEventListener("keydown", onEsc);
+  document.addEventListener("keydown", onKey);
 }
 async function novoProjeto() {
   const name = await promptModal(t("proj.new.title"), t("proj.new.placeholder"));

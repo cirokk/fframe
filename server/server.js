@@ -502,7 +502,8 @@ app.get("/_api/assets/:id/comments", requireAuth, (req, res) => {
 app.post("/_api/assets/:id/comments", requireAuth, (req, res) => {
   if (!store.getAsset(req.params.id)) return res.status(404).json({ error: "video inexistente" });
   const author = (req.session && req.session.user) || (req.device && ("device:" + req.device.name)) || null;
-  const c = store.addComment(req.params.id, { t: req.body && req.body.t, text: req.body && req.body.text, author });
+  const b = req.body || {};
+  const c = store.addComment(req.params.id, { t: b.t, tEnd: b.t_end, parentId: b.parent_id, text: b.text, author });
   if (!c) return res.status(400).json({ error: "texto obrigatorio" });
   res.status(201).json(c);
 });

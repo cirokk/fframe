@@ -133,18 +133,26 @@ function persistComments() { fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comm
 
 const listComments = (assetId) => (comments[assetId] || []).slice().sort((a, b) => a.t - b.t);
 const countComments = (assetId) => (comments[assetId] || []).length;
-function addComment(assetId, { t, text, author }) {
+function addComment(assetId, { t, tEnd, parentId, text, author }) {
   const clean = String(text || "").trim().slice(0, 2000);
   if (!clean) return null;
+  const list = comments[assetId] || (comments[assetId] = []);
+  // Resposta: herda o tempo do comentario-pai; so aceita pai valido do mesmo video.
+  const parent = parentId ? list.find((x) => x.id === parentId && !x.parent_id) : null;
+  const inT = parent ? parent.t : Math.max(0, Number(t) || 0);
+  let outT = null;
+  if (!parent && tEnd != null && Number(tEnd) > inT + 0.05) outT = Number(tEnd);
   const c = {
     id: uuid(),
-    t: Math.max(0, Number(t) || 0),
+    t: inT,
+    t_end: outT,                                   // trecho (in/out); null = ponto unico
+    parent_id: parent ? parent.id : null,          // resposta aninhada
     text: clean,
     author: (String(author || "").trim().slice(0, 120)) || null,
     created_at: new Date().toISOString(),
     resolved: false,
   };
-  (comments[assetId] = comments[assetId] || []).push(c);
+  list.push(c);
   persistComments();
   return c;
 }
@@ -154,6 +162,8 @@ function deleteComment(assetId, commentId) {
   const i = list.findIndex((c) => c.id === commentId);
   if (i < 0) return false;
   list.splice(i, 1);
+  // Apagar um comentario-pai remove tambem as respostas dele.
+  for (let j = list.length - 1; j >= 0; j--) if (list[j].parent_id === commentId) list.splice(j, 1);
   if (!list.length) delete comments[assetId];
   persistComments();
   return true;

@@ -57,7 +57,7 @@ flowchart LR
 - 🫧 **Bolha flutuante** sobre qualquer app de câmera — não precisa ser um app específico
 - 📷 **Pareamento por QR code** — escaneia e já está configurado, sem digitar servidor/chave
 - 🔑 **Múltiplos dispositivos, cada um com sua própria chave**, revogável individualmente pelo painel
-- 💬 **Comentários com timestamp** no player — anote um instante do vídeo, marcadores na timeline, clique pra pular, marque como resolvido (fluxo de revisão estilo Frame.io)
+- 💬 **Revisão estilo Frame.io** — player próprio com **pins de comentário na barra de reprodução**, **timecode** (`HH:MM:SS:FF`) e **passo frame a frame**, atalhos (espaço/J-K-L/setas), comentário por **trecho** (in/out), **respostas** (threads) e o comentário que **acende** quando o playhead passa por ele
 - 🌐 **Painel bilíngue** (português e inglês) com troca de idioma na hora, sem recarregar
 - 🗂️ Painel web (PWA): projetos, galeria, player, exclusão
 - 📥 Fila de envio (retoma sozinho quando a rede volta)
