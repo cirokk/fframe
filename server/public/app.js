@@ -159,6 +159,7 @@ function cardHtml(a) {
     <button class="thumb" type="button" data-play="${a.id}" data-name="${escapeHtml(a.name)}">
       <video preload="metadata" muted playsinline src="/_media/${a.id}#t=0.5"></video>
       <span class="playbtn">▶</span>
+      ${a.comment_count ? `<span class="cmt-badge">💬 ${a.comment_count}</span>` : ""}
     </button>
     <div class="meta">
       <div class="nm" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}</div>
@@ -170,26 +171,155 @@ function cardHtml(a) {
     </div></div>`;
 }
 
-// Player em tela cheia (assistir grande)
+// Formata segundos como M:SS (ou H:MM:SS em videos longos).
+function fmtClock(s) {
+  s = Math.max(0, Math.floor(Number(s) || 0));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+  const mm = h ? String(m).padStart(2, "0") : String(m);
+  return (h ? h + ":" : "") + mm + ":" + String(ss).padStart(2, "0");
+}
+// Autor "device:Celular do Ciro" -> "Celular do Ciro".
+const authorLabel = (a) => (a ? String(a).replace(/^device:/, "") : "—");
+
+// Player em tela cheia (assistir grande) com comentarios ancorados no tempo.
 function openPlayer(id, name) {
   const p = $("player");
   p.innerHTML =
-    `<div class="player-inner">
-      <div class="player-bar">
-        <span class="player-name">${escapeHtml(name)}</span>
-        <button class="player-close" type="button" data-close aria-label="${escapeHtml(t("player.close"))}">✕</button>
+    `<div class="player-inner review">
+      <div class="player-main">
+        <div class="player-bar">
+          <span class="player-name">${escapeHtml(name)}</span>
+          <button class="player-close" type="button" data-close aria-label="${escapeHtml(t("player.close"))}">✕</button>
+        </div>
+        <div class="player-stage">
+          <video class="player-video" src="/_media/${id}" controls autoplay playsinline></video>
+          <div class="tl-markers" id="tl-markers"></div>
+        </div>
       </div>
-      <video class="player-video" src="/_media/${id}" controls autoplay playsinline></video>
+      <aside class="player-side">
+        <div class="cmt-head">${escapeHtml(t("cmt.title"))} <span class="cmt-n" id="cmt-n">0</span></div>
+        <div class="cmt-list" id="cmt-list"></div>
+        <form class="cmt-compose" id="cmt-compose" autocomplete="off">
+          <div class="cmt-when">
+            <span class="chip" id="cmt-chip"></span>
+            <button type="button" class="cmt-reset" id="cmt-reset" hidden>↺ ${escapeHtml(t("cmt.now"))}</button>
+          </div>
+          <textarea id="cmt-text" rows="2"></textarea>
+          <button class="btn-primary" id="cmt-send" type="submit">${escapeHtml(t("cmt.send"))}</button>
+        </form>
+      </aside>
     </div>`;
   p.classList.add("show");
+
+  const video = p.querySelector("video");
+  let comments = [];
+  let composeTime = null; // null = segue o playhead; numero = congelado no momento comentado
+  let duration = 0;
+
+  const textEl = () => $("cmt-text");
+  const seek = (sec) => { try { video.currentTime = sec; video.pause(); } catch {} };
+
+  function updateChip() {
+    const time = composeTime != null ? composeTime : video.currentTime;
+    $("cmt-chip").textContent = t("cmt.at", { time: fmtClock(time) });
+    textEl().placeholder = t("cmt.placeholder", { time: fmtClock(time) });
+  }
+  function freeze() { // ao focar pra escrever, congela o momento e pausa o video
+    if (composeTime == null) { composeTime = video.currentTime; video.pause(); $("cmt-reset").hidden = false; updateChip(); }
+  }
+  function unfreeze() { composeTime = null; $("cmt-reset").hidden = true; updateChip(); }
+
+  function renderMarkers() {
+    const box = $("tl-markers");
+    if (!box) return;
+    box.innerHTML = !duration ? "" : comments.map((c) =>
+      `<button class="tl-mark${c.resolved ? " done" : ""}" type="button" data-seek="${c.t}"
+        title="${escapeHtml(authorLabel(c.author) + ": " + c.text)}"></button>`).join("");
+    // Posicao setada via JS (CSSOM), nao por atributo style inline — a CSP do
+    // servidor (default-src 'self', sem 'unsafe-inline') bloqueia style="" no markup.
+    box.querySelectorAll(".tl-mark").forEach((b) => {
+      if (duration) b.style.left = (parseFloat(b.dataset.seek) / duration * 100).toFixed(3) + "%";
+      b.addEventListener("click", () => seek(parseFloat(b.dataset.seek)));
+    });
+  }
+  function renderList() {
+    $("cmt-n").textContent = comments.length;
+    const list = $("cmt-list");
+    if (!comments.length) {
+      list.innerHTML = `<div class="cmt-empty">${escapeHtml(t("cmt.empty"))}<br><span>${escapeHtml(t("cmt.emptyHint"))}</span></div>`;
+      return;
+    }
+    list.innerHTML = comments.slice().sort((a, b) => a.t - b.t).map((c) =>
+      `<div class="cmt-item${c.resolved ? " done" : ""}">
+        <div class="cmt-top">
+          <button class="cmt-time" type="button" data-seek="${c.t}" title="${escapeHtml(t("cmt.jump", { time: fmtClock(c.t) }))}">${fmtClock(c.t)}</button>
+          <span class="cmt-auth">${escapeHtml(authorLabel(c.author))}</span>
+        </div>
+        <div class="cmt-body">${escapeHtml(c.text)}</div>
+        <div class="cmt-acts">
+          <button class="cmt-act" type="button" data-resolve="${c.id}" data-on="${c.resolved ? 1 : 0}">${escapeHtml(c.resolved ? t("cmt.reopen") : t("cmt.resolve"))}</button>
+          <button class="cmt-act danger" type="button" data-del="${c.id}">${escapeHtml(t("cmt.delete"))}</button>
+        </div>
+      </div>`).join("");
+    list.querySelectorAll("[data-seek]").forEach((b) => b.addEventListener("click", () => seek(parseFloat(b.dataset.seek))));
+    list.querySelectorAll("[data-resolve]").forEach((b) => b.addEventListener("click", () => toggleResolve(b.dataset.resolve, b.dataset.on !== "1")));
+    list.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => delComment(b.dataset.del)));
+  }
+
+  async function load() {
+    try { comments = await (await api("GET", `/_api/assets/${id}/comments`)).json(); }
+    catch { comments = []; }
+    renderList(); renderMarkers();
+  }
+  async function toggleResolve(cid, resolved) {
+    await api("PATCH", `/_api/assets/${id}/comments/${cid}`, { resolved });
+    const c = comments.find((x) => x.id === cid); if (c) c.resolved = resolved;
+    renderList(); renderMarkers();
+  }
+  async function delComment(cid) {
+    const ok = await confirmModal(t("cmt.delete.confirm"), t("cmt.delete"), true);
+    if (!ok) return;
+    const r = await api("DELETE", `/_api/assets/${id}/comments/${cid}`);
+    if (!r.ok) { toast(t("cmt.delete.fail"), "err"); return; }
+    comments = comments.filter((x) => x.id !== cid);
+    renderList(); renderMarkers(); toast(t("cmt.deleted"), "ok");
+  }
+  async function submit(ev) {
+    ev.preventDefault();
+    const text = textEl().value.trim();
+    if (!text) return;
+    const when = composeTime != null ? composeTime : video.currentTime;
+    const btn = $("cmt-send"); btn.disabled = true; btn.textContent = t("cmt.sending");
+    try {
+      const r = await api("POST", `/_api/assets/${id}/comments`, { t: when, text });
+      const c = await r.json().catch(() => null);
+      if (!r.ok || !c || !c.id) { toast((c && c.error) || t("cmt.add.fail"), "err"); return; }
+      comments.push(c);
+      textEl().value = ""; unfreeze();
+      renderList(); renderMarkers(); toast(t("cmt.added"), "ok");
+    } finally { btn.disabled = false; btn.textContent = t("cmt.send"); }
+  }
+
+  video.addEventListener("loadedmetadata", () => { duration = video.duration || 0; renderMarkers(); updateChip(); });
+  video.addEventListener("timeupdate", () => { if (composeTime == null) updateChip(); });
+  textEl().addEventListener("focus", freeze);
+  $("cmt-reset").addEventListener("click", () => { composeTime = video.currentTime; updateChip(); textEl().focus(); });
+  $("cmt-compose").addEventListener("submit", submit);
+  updateChip();
+  load();
+
   const close = () => {
-    const v = p.querySelector("video");
-    if (v) { try { v.pause(); } catch {} }
+    try { video.pause(); } catch {}
     p.classList.remove("show");
     setTimeout(() => (p.innerHTML = ""), 200);
     document.removeEventListener("keydown", onEsc);
+    render(); // atualiza o contador 💬 nos cards
   };
-  const onEsc = (e) => { if (e.key === "Escape") close(); };
+  const onEsc = (e) => {
+    if (e.key !== "Escape") return;
+    if (document.activeElement === textEl()) { textEl().blur(); return; } // Esc no texto: so desfoca
+    close();
+  };
   p.querySelector("[data-close]").addEventListener("click", close);
   p.addEventListener("click", (e) => { if (e.target === p) close(); });
   document.addEventListener("keydown", onEsc);

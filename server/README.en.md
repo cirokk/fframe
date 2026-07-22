@@ -37,6 +37,17 @@ generated QR code straight from the app — server address and key are filled in
 Each device has its own key and can be **individually revoked** at any time, without affecting
 the others.
 
+## Timestamp comments
+
+In the panel's player, every video has a **time-anchored comments** panel: pause at the point you
+want, type, and the comment sticks to that moment. Comments show up as **markers on the timeline**
+(click to jump to that point), can be marked **resolved** and deleted. The video card shows a 💬
+badge with the count. Only logged-in panel users can comment. They're stored in
+`data/comments.json`.
+
+Routes (all require login): `GET/POST /_api/assets/:id/comments`, `PATCH` (resolve), and
+`DELETE /_api/assets/:id/comments/:cid`.
+
 ## Panel languages
 
 The panel ships in **Portuguese** and **English**, with a dropdown on the login screen and in the
@@ -49,9 +60,9 @@ dropdown lists it automatically. Missing keys fall back to Portuguese.
 ## Structure
 
 - `server.js` — routes (`/_ingest` for the app, `/_api/*` and panel media)
-- `lib/store.js` — state (config, projects, assets, auth, devices)
+- `lib/store.js` — state (config, projects, assets, auth, devices, comments)
 - `public/` — web panel (PWA): `dashboard.html`, `app.css`, `app.js`, `i18n.js` (translations)
-- `data/` — runtime data (config, videos, logs, devices) — **not versioned**
+- `data/` — runtime data (config, videos, logs, devices, `comments.json`) — **not versioned**
 - `test-client.js` — simulates a full upload to test the server without a phone
 
 ## Security

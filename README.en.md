@@ -57,6 +57,7 @@ flowchart LR
 - 🫧 **Floating bubble** over any camera app — not tied to a specific one
 - 📷 **QR code pairing** — scan and you're configured, no typing server/key by hand
 - 🔑 **Multiple devices, each with its own key**, individually revocable from the panel
+- 💬 **Timestamp comments** in the player — pin a note to a moment in the video, markers on the timeline, click to jump, mark as resolved (Frame.io-style review flow)
 - 🌐 **Bilingual panel** (Portuguese and English) with instant language switching, no reload
 - 🗂️ Web panel (PWA): projects, gallery, player, deletion
 - 📥 Upload queue (resumes automatically once the network is back)

@@ -481,6 +481,7 @@ app.get("/_api/assets", requireAuth, (req, res) => {
       filesize: a.filesize, filetype: a.filetype, device_name: a.device_name,
       uploaded_at: a.uploaded_at || a.created_at,
       date: (a.uploaded_at || a.created_at || "").slice(0, 10),
+      comment_count: store.countComments(a.id),
     }))
     .sort((x, y) => String(y.uploaded_at).localeCompare(String(x.uploaded_at)));
   res.json(list);
@@ -490,6 +491,27 @@ app.delete("/_api/assets/:id", requireAuth, (req, res) => {
   const a = store.getAsset(req.params.id);
   const ok = store.deleteAsset(req.params.id);
   if (ok) log(`    VIDEO EXCLUIDO: "${a && a.name}" (${req.params.id})`);
+  res.status(ok ? 200 : 404).json({ ok });
+});
+
+// ---- Comentarios com timestamp (revisao no painel) — exige login ------------
+app.get("/_api/assets/:id/comments", requireAuth, (req, res) => {
+  if (!store.getAsset(req.params.id)) return res.status(404).json({ error: "video inexistente" });
+  res.json(store.listComments(req.params.id));
+});
+app.post("/_api/assets/:id/comments", requireAuth, (req, res) => {
+  if (!store.getAsset(req.params.id)) return res.status(404).json({ error: "video inexistente" });
+  const author = (req.session && req.session.user) || (req.device && ("device:" + req.device.name)) || null;
+  const c = store.addComment(req.params.id, { t: req.body && req.body.t, text: req.body && req.body.text, author });
+  if (!c) return res.status(400).json({ error: "texto obrigatorio" });
+  res.status(201).json(c);
+});
+app.patch("/_api/assets/:id/comments/:cid", requireAuth, (req, res) => {
+  const ok = store.setCommentResolved(req.params.id, req.params.cid, !!(req.body && req.body.resolved));
+  res.status(ok ? 200 : 404).json({ ok });
+});
+app.delete("/_api/assets/:id/comments/:cid", requireAuth, (req, res) => {
+  const ok = store.deleteComment(req.params.id, req.params.cid);
   res.status(ok ? 200 : 404).json({ ok });
 });
 

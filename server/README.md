@@ -37,6 +37,17 @@ escaneie o QR gerado direto no app — servidor e chave são preenchidos automat
 dispositivo tem sua própria chave e pode ser **revogado individualmente** a qualquer momento, sem
 afetar os outros.
 
+## Comentários com timestamp
+
+No player do painel, cada vídeo tem um painel de **comentários ancorados no tempo**: você pausa
+no ponto desejado, escreve, e o comentário fica preso àquele instante. Os comentários aparecem
+como **marcadores na timeline** (clique pra pular pra aquele ponto), podem ser marcados como
+**resolvidos** e excluídos. O card do vídeo mostra um badge 💬 com a contagem. Só quem tem login
+no painel comenta. Ficam guardados em `data/comments.json`.
+
+Rotas (todas exigem login): `GET/POST /_api/assets/:id/comments`, `PATCH` (resolver) e
+`DELETE /_api/assets/:id/comments/:cid`.
+
 ## Idiomas do painel
 
 O painel vem em **português** e **inglês**, com um menu suspenso na tela de login e na barra
@@ -49,9 +60,9 @@ menu passa a listar a opção sozinho. Chaves que faltarem caem no português.
 ## Estrutura
 
 - `server.js` — rotas (`/_ingest` do app, `/_api/*` e mídia do painel)
-- `lib/store.js` — estado (config, projetos, assets, auth, dispositivos)
+- `lib/store.js` — estado (config, projetos, assets, auth, dispositivos, comentários)
 - `public/` — painel web (PWA): `dashboard.html`, `app.css`, `app.js`, `i18n.js` (traduções)
-- `data/` — dados em runtime (config, vídeos, logs, dispositivos) — **não versionado**
+- `data/` — dados em runtime (config, vídeos, logs, dispositivos, `comments.json`) — **não versionado**
 - `test-client.js` — simula um envio completo para testar o servidor sem celular
 
 ## Segurança

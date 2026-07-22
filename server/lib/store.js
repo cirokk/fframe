@@ -15,6 +15,7 @@ const AUTH_FILE = path.join(DATA_DIR, "auth.json"); // { user, hash } — nunca 
 const SECRET_FILE = path.join(DATA_DIR, ".session-secret");
 const DEVICE_KEY_FILE = path.join(DATA_DIR, "device-key.txt"); // chave legada (unica) do app Fframe Uploader
 const DEVICES_FILE = path.join(DATA_DIR, "devices.json"); // dispositivos nomeados/revogaveis
+const COMMENTS_FILE = path.join(DATA_DIR, "comments.json"); // comentarios com timestamp por video
 
 fs.mkdirSync(PARTS_DIR, { recursive: true });
 
@@ -120,6 +121,51 @@ function createAsset({ projectId, name, filetype, filesize, chunkSize, parts: pa
   return asset;
 }
 const getAsset = (id) => assets[id];
+
+// ---- Comentarios com timestamp (revisao no painel) --------------------------
+// data/comments.json: { <assetId>: [ { id, t, text, author, created_at, resolved } ] }
+// `t` = segundos no video (float). Ordenados por tempo na leitura.
+let comments = {};
+if (fs.existsSync(COMMENTS_FILE)) {
+  try { comments = JSON.parse(fs.readFileSync(COMMENTS_FILE, "utf8")); } catch { comments = {}; }
+}
+function persistComments() { fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2)); }
+
+const listComments = (assetId) => (comments[assetId] || []).slice().sort((a, b) => a.t - b.t);
+const countComments = (assetId) => (comments[assetId] || []).length;
+function addComment(assetId, { t, text, author }) {
+  const clean = String(text || "").trim().slice(0, 2000);
+  if (!clean) return null;
+  const c = {
+    id: uuid(),
+    t: Math.max(0, Number(t) || 0),
+    text: clean,
+    author: (String(author || "").trim().slice(0, 120)) || null,
+    created_at: new Date().toISOString(),
+    resolved: false,
+  };
+  (comments[assetId] = comments[assetId] || []).push(c);
+  persistComments();
+  return c;
+}
+function deleteComment(assetId, commentId) {
+  const list = comments[assetId];
+  if (!list) return false;
+  const i = list.findIndex((c) => c.id === commentId);
+  if (i < 0) return false;
+  list.splice(i, 1);
+  if (!list.length) delete comments[assetId];
+  persistComments();
+  return true;
+}
+function setCommentResolved(assetId, commentId, resolved) {
+  const c = (comments[assetId] || []).find((x) => x.id === commentId);
+  if (!c) return false;
+  c.resolved = !!resolved;
+  persistComments();
+  return true;
+}
+
 function markPartReceived(id, partIndex) {
   const a = assets[id]; if (!a) return;
   if (!a.received_parts.includes(partIndex)) a.received_parts.push(partIndex);
@@ -258,6 +304,7 @@ function deleteAsset(id) {
   try { fs.rmSync(path.join(PARTS_DIR, id), { recursive: true, force: true }); } catch {}
   delete assets[id];
   persistAssets();
+  if (comments[id]) { delete comments[id]; persistComments(); } // sem video, sem comentarios
   return true;
 }
 
@@ -270,5 +317,6 @@ module.exports = {
   setConnectedProject, getConnectedProject,
   issueAuthCode, redeemAuthCode, issueToken,
   createAsset, getAsset, markPartReceived, partPath, finalPathFor, markUploaded,
+  listComments, countComments, addComment, deleteComment, setCommentResolved,
   assets: () => assets,
 };
